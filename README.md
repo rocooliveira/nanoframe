@@ -13,7 +13,7 @@ git clone https://github.com/your-username/nanoframe.git
 #### Usando composer
 
 ```bash
-composer install nanoframe
+composer create-project roco/nanoframe
 ```
 
 ## Uso
