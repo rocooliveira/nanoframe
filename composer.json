@@ -1,0 +1,23 @@
+{
+    "name": "roco/nanoframe",
+    "description": "Um pequeno framework extremamente simples para php",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Nanoframe\\": "core/"
+        }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Romulo Pereira",
+            "email": "rocooliveira@outlook.com"
+        }
+    ],
+    "minimum-stability": "beta"
+}
