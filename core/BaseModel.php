@@ -19,7 +19,10 @@ class BaseModel {
   private $orderBy = '';
   private $limit = '';
 
-  private $params;
+  private $params = [];
+
+  private $clausesAndParams = [];
+  
 
   public function __construct() {
 
@@ -69,7 +72,7 @@ class BaseModel {
      ? "WHERE {$indexColumn} IN (" .$placeholders . ")"
      : "AND {$indexColumn} IN (" .$placeholders . ")";
 
-    $this->params = $params;
+    $this->params = array_merge($this->params, $params);
 
     return $this;
   }
@@ -85,8 +88,9 @@ class BaseModel {
   }
 
   public function getArray() {
-    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->orderBy} {$this->limit}";
+    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} {$this->limit}";
     $result = $this->_query($sql, $this->params);
+
     return $result->fetchAll(PDO::FETCH_ASSOC);
   }
 
@@ -94,12 +98,13 @@ class BaseModel {
     $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} {$this->limit}";
 
     $result = $this->_query($sql, $this->params);
+
     return $result->fetchAll(PDO::FETCH_OBJ);
   }
 
 
   public function getRow() {
-    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->orderBy} LIMIT 1";
+    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} LIMIT 1";
     $result = $this->_query($sql, $this->params);
 
     return $result->fetchAll(PDO::FETCH_OBJ)[0] ?? NULL;
@@ -255,36 +260,79 @@ class BaseModel {
         $params = array_merge(array_values($data), [$data[$uniqueFields]]);
       }
     
-     $sql = "INSERT INTO {$this->table} ({$columns}) SELECT {$placeholders} FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM {$this->table} WHERE {$whereClause})";
+      $sql = "INSERT INTO {$this->table} ({$columns}) SELECT {$placeholders} FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM {$this->table} WHERE {$whereClause})";
 
 
       $this->_query($sql, $params);
 
       return $this->conn->lastInsertId();
     }else{
-      $this->insertBatchIfNotExists($data, $uniqueFields);
 
-
-      $params = array_unique( array_column($data, $uniqueFields) );
-      $placeholders = implode(', ', array_fill(0, count($data), '?'));
-
-      $sql = "SELECT id FROM {$this->table} WHERE {$uniqueFields} IN ( $placeholders )";
-
-      $result = $this->_query($sql, $params);
+      if(!is_array($uniqueFields)){
+        $uniqueFields = [$uniqueFields];
+      }
       
-      $ret = $result->fetchAll(PDO::FETCH_ASSOC);
+      return $this->insertBatchIfNotExists($data, $uniqueFields);
 
-      return array_column($ret, 'id');
     }
   }
 
 
 
-  public function insertBatchIfNotExists($data, $uniqueField)
+  public function insertBatchIfNotExists($data, $uniqueFields)
   {
+    $this->storeClausesAndParams();
+
     foreach ($data as $item) {
-      $this->insertIfNotExists($item, $uniqueField);
+      $this->insertIfNotExists($item, $uniqueFields);
+
+      $this->setClausesAndParams();
+
     }
+
+    $this->clausesAndParams = [];
+
+
+    return $this->getInsertedBatchIds($data, $uniqueFields);
+  }
+
+
+  private function getInsertedBatchIds($data, $uniqueFields)
+  {
+
+    $params = [];
+
+    $where = '';
+
+    if( !is_array($uniqueFields) ){
+      $uniqueFields = [$uniqueFields];
+    }
+
+    foreach ($uniqueFields as $key =>  $uq) {
+
+      $arr = array_column($data, $uq);
+
+      $params[] = $arr;
+
+      $placeholders = implode(', ', array_fill(0, count($arr), '?'));
+
+      if( $where != '' ){
+        $where.= "AND ";
+      }
+
+      $where.= "{$uq} IN({$placeholders}) ";
+    }
+
+    $params = array_merge(...$params);
+
+    $sql = "SELECT id FROM {$this->table} WHERE {$where}";
+    
+
+    $result = $this->_query($sql, $params);
+    
+    $ret = $result->fetchAll(PDO::FETCH_ASSOC);
+
+    return array_column($ret, 'id');
   }
 
 
@@ -341,6 +389,8 @@ class BaseModel {
 
       $statement->execute($params);
 
+      $this->resetWrite();
+
       return $statement;
 
     } catch (\PDOException $e) {
@@ -358,5 +408,33 @@ class BaseModel {
     $this->whereIn = '';
     $this->orderBy = '';
     $this->limit = '';
+    $this->params = [];
+  }
+
+  private function storeClausesAndParams(){
+    $this->clausesAndParams = [
+      'table'   => $this->table,
+      'select'  => $this->select,
+      'where'   => $this->where,
+      'whereIn' => $this->whereIn,
+      'orderBy' => $this->orderBy,
+      'limit'   => $this->limit,
+      'params'  => $this->params,
+    ];
+
+  }
+
+
+  private function setClausesAndParams(){
+
+    $this->table   = $this->clausesAndParams['table'];
+    $this->select  = $this->clausesAndParams['select'];
+    $this->where   = $this->clausesAndParams['where'];
+    $this->whereIn = $this->clausesAndParams['whereIn'];
+    $this->orderBy = $this->clausesAndParams['orderBy'];
+    $this->limit   = $this->clausesAndParams['limit'  ];
+    $this->params  = $this->clausesAndParams['params' ];
+
+     
   }
 }
