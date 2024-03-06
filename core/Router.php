@@ -28,7 +28,7 @@ class Router
 
       $regex = self::buildRegex($route);
 
-      // if (preg_match($regex, $pathInfo, $matches)) {
+
       if (preg_match($regex, $pathInfo, $matches) && in_array($method, $allowedMethods)) {
         array_shift($matches);
 
@@ -47,6 +47,29 @@ class Router
     exit;
   }
 
+
+  public static function cliDispatch()
+  {
+      global $argv;
+
+      // Se não houver argumentos, exiba uma mensagem de erro
+      if (empty($argv)) {
+          echo "Erro: Nenhum argumento fornecido para a linha de comando.\n";
+          exit;
+      }
+
+      // O primeiro argumento é a rota, os próximos são os parâmetros
+      $pathInfo = explode( '/',  array_shift($argv) );
+
+      $controllerMethod = array_shift($argv);
+
+      $params = $argv;
+
+      self::callControllerMethod($pathInfo, $controllerMethod, $params, TRUE);
+      
+  }
+
+
   public static function buildRegex($routePattern)
   {
     $regex = preg_replace('/\//', '\/', $routePattern);
@@ -58,7 +81,7 @@ class Router
     return $regex;
   }
 
-  public static function callControllerMethod($handlerParts, $method, $params)
+  public static function callControllerMethod($handlerParts, $method, $params, $isCli = FALSE)
   {
     $path = implode('/', $handlerParts);
 
@@ -83,7 +106,9 @@ class Router
     }
 
     
-    $classWithNamespace = "App\\Controller{$namespace}\\{$className}";
+    $classWithNamespace = !$isCli 
+    ? "App\\Controller{$namespace}\\{$className}"
+    : "App\\Controller\\Command{$namespace}\\{$className}";
 
 
     if (file_exists($filePath)) {

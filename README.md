@@ -280,6 +280,42 @@ class HomeController extends BaseController
 O mesmo pode ser usado seguindo o padrão do exemplo acima para `post` com `$this->input->post()`, para get ou post com `$this->input->getPost()`, e para os métodos `PUT`,  `DELETE`    e `PATCH` deve ser usado: `$this->input->inputStream()`
 
 
+### Migrations
+Um sistema de migrations focado em MYSQL está diponível para ser utilizado via CLI. 
+Basta acessar o terminal e utilizar o comando:
+```
+php cli.php command/Migrate parametro_desejado 
+```
+Os parámetros diponíveis são:
+
+**make**: Método de criação do arquivo de migração.
+**latest**: Migra para a versão de migração mais recente.
+**rollback**: Migra para versão estpulada.
+**combine**: Cria um arquivo consolidado com todas as migrações disponíveis
+**info**: uma tabela que mostra informações sobre o status de suas migrações.
+**help**: Exibe a seção de ajuda.
+
+O diretório onde serão armazenados os arquivos de migration fica em `app/migrations` (diretorio reservado exclusivamente para este propósito).
+
+Ao utilizar o sistema de migration será criado automaticamente uma tabela `migrations` em seu banco de dados para fazer o controle de verão das suas migrações no banco.
+
+Ao utilizar o comando **make** será solicitado o nome da sua migration (*ex: create_user_table*) e o nome da tabela: (*ex: user*). Um arquivo com o nome de migration acrescido de um sufixo com timestamp será criado no diretorio de migrations. Dentro desse arquivo você deverá utilizar as funções  up() e donw() para setar as alterações no seu banco de dados, criando uma atualização no banco inserindo novas estruturas ou desfazendo as alterações respectivamente. Todos os arquivos de migração extendem as funcionalidades da classe `DatabaseForge`, com funções de criação, exclusão e de tabela, crianção de chaves estrangeira, índices e outros. Utilize os metodos fornecidos por essa classe para desenvolver suas migrations.
+
+Após criar suas migration você poderá migrar seu banco para versão mais recente utilizando o seguinte comando: 
+`php cli.php command/Migrate latest`
+
+E para desfazer as alterações migrando para versão anterior você pode utilizar o seguinte comando:
+`php cli.php command/Migrate last`
+
+*Lembrando que o método **down()** deve estar devidamente configurado, visando desfazer as alterações efetuadas com o método **up()***
+
+Utilizando o comando **rollback** você poderá retroceder para uma versão especifica do banco de dados. Será solicitado um numero de versão (timestamp do arquivo).
+
+Ao longo do desenvolvimento da sua aplicação seu diretório de `migrations` pode ficar muito "inflado", com muitos arquivos  de migrações conforme sua aplicação cresce. Tendo isso em mente pode ser útil consolidar esse inumeros arquivos em um único arquivo de migração. Isso pode ser bem útil para deixar as coisas mais organizadas. Para fazer isso rode o comando:
+`php cli.php command/Migrate combine`
+
+Todos arquivos de migração existentes serão consolidados em um único arquivo. Ao final do processo será questionado se deseja apagar os arquivos originais. Caso confirme todos arquivos originais serão apagados e você tera apenas seu(s) arquivo(s) de consolidação de migrations. Caso contrário, a exclusão não será feita. Você poderá analisar o que foi gerado, sem apagar os arquivos originais, porém você deve excluir os arquivos originas antes de prosseguir. Manter os arquivos e rodar novamente um comando upgrade ou downgrade de versões de migrações irá gerar um conflito de versões, pois todos os arquivos já foram consolidados em um único arquivo.
+
 ## Contribuindo
 
 Sinta-se à vontade para contribuir abrindo issues ou enviando pull requests.
