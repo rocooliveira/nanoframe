@@ -13,8 +13,13 @@ git clone https://github.com/your-username/nanoframe.git
 #### Usando composer
 
 ```bash
-composer create-project roco/nanoframe
+composer create-project roco/nanoframe meu-diretorio
 ```
+Substitua *meu-diretorio* pelo nome do diretório  no qual deseja que o projeto seja executado.
+
+O comando acima criará uma pasta **meu-diretorio** .
+
+Se você omitir o argumento “meu-diretorio”, o comando criará um diretório “nanoframe”, que pode ser renomeado conforme apropriado.
 
 ## Uso
 ### Setando rotas
@@ -289,10 +294,15 @@ php cli.php command/Migrate parametro_desejado
 Os parámetros diponíveis são:
 
 **make**: Método de criação do arquivo de migração.
+
 **latest**: Migra para a versão de migração mais recente.
+
 **rollback**: Migra para versão estpulada.
+
 **combine**: Cria um arquivo consolidado com todas as migrações disponíveis
-**info**: uma tabela que mostra informações sobre o status de suas migrações.
+
+**info**: Uma tabela que mostra informações sobre o status de suas migrações.
+
 **help**: Exibe a seção de ajuda.
 
 O diretório onde serão armazenados os arquivos de migration fica em `app/migrations` (diretorio reservado exclusivamente para este propósito).
@@ -315,6 +325,8 @@ Ao longo do desenvolvimento da sua aplicação seu diretório de `migrations` po
 `php cli.php command/Migrate combine`
 
 Todos arquivos de migração existentes serão consolidados em um único arquivo. Ao final do processo será questionado se deseja apagar os arquivos originais. Caso confirme todos arquivos originais serão apagados e você tera apenas seu(s) arquivo(s) de consolidação de migrations. Caso contrário, a exclusão não será feita. Você poderá analisar o que foi gerado, sem apagar os arquivos originais, porém você deve excluir os arquivos originas antes de prosseguir. Manter os arquivos e rodar novamente um comando upgrade ou downgrade de versões de migrações irá gerar um conflito de versões, pois todos os arquivos já foram consolidados em um único arquivo.
+
+
 
 ## Contribuindo
 
