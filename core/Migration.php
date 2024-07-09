@@ -52,7 +52,7 @@ class Migration
 		// Verificar se o banco de dados não existe
 		if ($result->num_rows < 1) {
 
-			echo "Banco de dados não encontrado. Deseja criar um banco com este nome? (y/n): ";
+			echo "Banco de dados não encontrado. Deseja criar um banco com o nome definido no seu arquivo .env? (y/n): ";
 			$createDatabase = trim(fgets(STDIN));
 
 			if (strtolower($createDatabase) === 'y') {
@@ -68,8 +68,6 @@ class Migration
 
 				}
 
-
-				$conn->close();
 
 			} else {
 				echo "\nExecução encerrada. Crie o banco de dados manualmente ou solicite a criação por aqui .\n";
