@@ -104,17 +104,20 @@ class Input
 	}
 
 
-	private static function sanitizeArray($array)
+	private static function sanitizeArray($data)
 	{
     // Implementação básica de sanitização
-		$sanitizedArray = array_map('strip_tags', $array);
-		$sanitizedArray = array_map('htmlspecialchars', $sanitizedArray);
 
-    // Remover caracteres invisíveis
-    $sanitizedArray = array_map('self::removeInvisibleCharacters', $sanitizedArray);
-
-    // Prevenir SQL Injection (verificação básica)
-		$sanitizedArray = array_map('self::preventSqlInjection', $sanitizedArray);
+    if (is_array($data)) {
+      // Processa recursivamente os arrays
+      $sanitizedArray = array_map([self::class, 'sanitizeArray'], $data);
+    } else {
+      // Se não for um array, sanitize a string
+      $sanitizedArray = strip_tags($data);
+      $sanitizedArray = htmlspecialchars($sanitizedArray);
+      $sanitizedArray = self::removeInvisibleCharacters($sanitizedArray);
+      $sanitizedArray = self::preventSqlInjection($sanitizedArray);
+    }
 
 		return $sanitizedArray;
 	}
