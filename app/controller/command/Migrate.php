@@ -786,7 +786,7 @@ class Migrate extends Migration
 		}
 		else
 		{
-			$fileContent .= '		$this->dropTable($'.'this->tableName, TRUE);'  .  PHP_EOL;
+			$fileContent .= '			$this->dropTable($'.'this->tableName, TRUE);'  .  PHP_EOL .  PHP_EOL;
 		}
 
 		$fileContent .= '		} catch (\Exception $e) {'  .  PHP_EOL;
