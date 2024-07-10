@@ -120,13 +120,6 @@ use Nanoframe\Core\BaseModel;
 
 class OrderModel extends BaseModel
 {
-    public $db;
-
-    public function __construct()
-    {
-        $this->db = new BaseModel();
-    }
-
     public function getOrder($orderId)
     {
         return $this->db->table('orders')->where('id = ?', [ $orderId ])->get();
