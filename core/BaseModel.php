@@ -4,7 +4,7 @@ namespace Nanoframe\Core;
 
 class BaseModel {
 
-  public $db;
+  protected $db;
   
   public function __construct() {
 

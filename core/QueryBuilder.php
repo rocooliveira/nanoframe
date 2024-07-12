@@ -117,6 +117,11 @@ class QueryBuilder {
 
 
   public function update($data) {
+
+    if(is_object($data)){
+      $data = get_object_vars($data);
+    }
+
     $set = '';
     foreach ($data as $column => $value) {
       $set .= "{$column} = ?, ";
@@ -157,6 +162,11 @@ class QueryBuilder {
   }
 
   public function insert($data) {
+
+    if(is_object($data)){
+      $data = get_object_vars($data);
+    }
+
     $columns = implode(', ', array_keys($data));
     $values = implode(', ', array_fill(0, count($data), '?'));
 
