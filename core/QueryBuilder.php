@@ -44,9 +44,23 @@ class QueryBuilder {
     }
   }
 
-  public function teste($a)
+  public function beginTransaction()
   {
-    exit("$a");
+    if (!$this->conn) {
+      $this->connect();
+    }
+    
+    $this->conn->beginTransaction();
+  }
+
+  public function commit()
+  {
+    $this->conn->commit();
+  }
+  
+  public function rollBack()
+  {
+    $this->conn->rollBack();
   }
 
   public function table($tableName) {
