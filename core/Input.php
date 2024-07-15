@@ -91,18 +91,30 @@ class Input
 
 		$data = $clearData ? self::sanitizeArray($request) : $request;
 
+		$arrayRequest = TRUE;
+
 		if( ! $index ) return $data;
 
 		if(! is_array($index) ){
 			$index = [$index];
+			$arrayRequest = FALSE;
+		
+		}else{
+
+			$indexArray = array_fill_keys($index, NULL) ;
+
+			$data = array_merge( $indexArray, $data );
+
 		}
 
-		return array_filter($data, function($item, $key) use ($index){
+		$ret = array_filter($data, function($item, $key) use ($index){
 			return in_array($key, $index);
 		}, ARRAY_FILTER_USE_BOTH);
 
-	}
 
+		return $arrayRequest ? $ret : $ret[ $index[0] ];
+
+	}
 
 	private static function sanitizeArray($data)
 	{
