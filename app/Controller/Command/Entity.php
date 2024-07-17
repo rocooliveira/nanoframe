@@ -32,6 +32,7 @@ class Entity extends Prompt
 		$tables = $this->pdo->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
 
 		$response = $this->readLine('Deseja gerar classes para todas as tabelas? (s/n): ');
+
 		if ( $response === 'n') {
 			
 			$tableName = $this->readLine('Especifique o nome da tabela: ');
@@ -47,7 +48,7 @@ class Entity extends Prompt
 		foreach ($tables as $table) {
 			$columns = $this->pdo->query("DESCRIBE $table")->fetchAll(\PDO::FETCH_ASSOC);
 			$className = ucfirst($table);
-			
+
 			$filePath = APP_PATH . "/Entity/$className.php";
 
 			if (file_exists($filePath)) {
@@ -68,21 +69,32 @@ class Entity extends Prompt
 
 			$classContent .= "\n  public function __construct(\$data = []) {\n";
 			foreach ($columns as $column) {
-				$classContent .= "    \$this->{$column['Field']} = \$data['{$column['Field']}'] ?? null;\n";
+        $field = ucfirst($column['Field']);
+        $classContent .= "    \$this->set$field(\$data['{$column['Field']}'] ?? null);\n";
 			}
 			$classContent .= "  }\n\n";
 
 			foreach ($columns as $column) {
 				$field = ucfirst($column['Field']);
 				$type = $this->mapColumnTypeToPHP($column['Type']);
+				$nullable = $column['Null'] === 'YES' ? 'true' : 'false';
+
+
 				$classContent .= "  public function get$field(): $type {\n";
 				$classContent .= "    return \$this->{$column['Field']};\n";
 				$classContent .= "  }\n\n";
 
+
 				$classContent .= "  public function set$field($type \$value): void {\n";
+        if ($nullable === 'false') {
+          $classContent .= "    if (\$value === null) {\n";
+          $classContent .= "      throw new \InvalidArgumentException('{$column['Field']} não pode ser nulo');\n";
+          $classContent .= "    }\n";
+        }
 				$classContent .= "    if (!is_{$type}(\$value)) {\n";
 				$classContent .= "      throw new \InvalidArgumentException('O tipo esperado para {$column['Field']} é {$type}');\n";
 				$classContent .= "    }\n";
+
 				$classContent .= "    \$this->{$column['Field']} = \$value;\n";
 				$classContent .= "  }\n\n";
 			}
