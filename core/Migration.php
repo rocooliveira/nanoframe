@@ -22,7 +22,7 @@ class Migration
 	{
 
 		$this->host 		= 	$_ENV['DB_HOST'] ?? NULL;
-		$this->database =   $_ENV['DB_NAME'] ?? NULL;
+		$this->database 	=   $_ENV['DB_NAME'] ?? NULL;
 		$this->user 		= 	$_ENV['DB_USER'] ?? NULL;
 		$this->pass 		= 	$_ENV['DB_PASSWORD'] ?? '';
 
