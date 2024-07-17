@@ -10,7 +10,7 @@ if ( PHP_SAPI !== 'cli' ) exit('No web access allowed');
  * Classe para migrations em banco de dados mysql
  * Uma tabela chamamada "migrarions" será criada e configurada automaticamente
  * Utilize o terminal a partir da raiz do projeto para criar suas migrations
- * Rode o comando "php cli.php command/Migrate make" para criar novos arquivos de migration no diretório "migrarions"
+ * Rode o comando "php cli.php Command/Migrate make" para criar novos arquivos de migration no diretório "migrarions"
  * 
  * Além de "make" também estão disponíveis os parâmetros: 
  * - "latest": 	 Migra para a versão mais recente

@@ -23,7 +23,7 @@ Se você omitir o argumento “meu-diretorio”, o comando criará um diretório
 
 ## Uso
 ### Setando rotas
-Definia suas rotas no arquivo `route.php` no diretório `app/config`
+Definia suas rotas no arquivo `route.php` no diretório `app/Config`
 
 ```php
 // routes.php
@@ -189,7 +189,7 @@ class OrderModel extends BaseModel
 
 #### Views
 
-Arquivos de views devem ser alocados dentro do diretório `app/views`  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instancia deste Loader em `$this->load`
+Arquivos de views devem ser alocados dentro do diretório `app/Views`  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instancia deste Loader em `$this->load`
 
 ```php
 // HomeController.php
@@ -216,7 +216,7 @@ Ainda é disponível um terceiro parâmetro no métodom view que por padrão é 
 
 #### Utils
 
-Arquivos para utilitários devem ser alocados dentro do diretório `app/utils`, eles devem ser arquivos php com funções explicitas e não arquivos de classes.  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instancia deste Loader em `$this->load. 
+Arquivos para utilitários devem ser alocados dentro do diretório `app/Utils`, eles devem ser arquivos php com funções explicitas e não arquivos de classes.  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instancia deste Loader em `$this->load. 
 
 Pode ser passado um nome de arquivo util ou um array de nomes
 
@@ -282,7 +282,7 @@ O mesmo pode ser usado seguindo o padrão do exemplo acima para `post` com `$thi
 Um sistema de migrations focado em MYSQL está diponível para ser utilizado via CLI. 
 Basta acessar o terminal e utilizar o comando:
 ```
-php cli.php command/Migrate parametro_desejado 
+php cli.php Command/Migrate parametro_desejado 
 ```
 Os parámetros diponíveis são:
 
@@ -298,24 +298,24 @@ Os parámetros diponíveis são:
 
 **help**: Exibe a seção de ajuda.
 
-O diretório onde serão armazenados os arquivos de migration fica em `app/migrations` (diretorio reservado exclusivamente para este propósito).
+O diretório onde serão armazenados os arquivos de migration fica em `app/Migrations` (diretorio reservado exclusivamente para este propósito).
 
 Ao utilizar o sistema de migration será criado automaticamente uma tabela `migrations` em seu banco de dados para fazer o controle de verão das suas migrações no banco.
 
 Ao utilizar o comando **make** será solicitado o nome da sua migration (*ex: create_user_table*) e o nome da tabela: (*ex: user*). Um arquivo com o nome de migration acrescido de um sufixo com timestamp será criado no diretorio de migrations. Dentro desse arquivo você deverá utilizar as funções  up() e donw() para setar as alterações no seu banco de dados, criando uma atualização no banco inserindo novas estruturas ou desfazendo as alterações respectivamente. Todos os arquivos de migração extendem as funcionalidades da classe `DatabaseForge`, com funções de criação, exclusão e de tabela, crianção de chaves estrangeira, índices e outros. Utilize os metodos fornecidos por essa classe para desenvolver suas migrations.
 
 Após criar suas migration você poderá migrar seu banco para versão mais recente utilizando o seguinte comando: 
-`php cli.php command/Migrate latest`
+`php cli.php Command/Migrate latest`
 
 E para desfazer as alterações migrando para versão anterior você pode utilizar o seguinte comando:
-`php cli.php command/Migrate last`
+`php cli.php Command/Migrate last`
 
 *Lembrando que o método **down()** deve estar devidamente configurado, visando desfazer as alterações efetuadas com o método **up()***
 
 Utilizando o comando **rollback** você poderá retroceder para uma versão especifica do banco de dados. Será solicitado um numero de versão (timestamp do arquivo).
 
 Ao longo do desenvolvimento da sua aplicação seu diretório de `migrations` pode ficar muito "inflado", com muitos arquivos  de migrações conforme sua aplicação cresce. Tendo isso em mente pode ser útil consolidar esse inumeros arquivos em um único arquivo de migração. Isso pode ser bem útil para deixar as coisas mais organizadas. Para fazer isso rode o comando:
-`php cli.php command/Migrate combine`
+`php cli.php Command/Migrate combine`
 
 Todos arquivos de migração existentes serão consolidados em um único arquivo. Ao final do processo será questionado se deseja apagar os arquivos originais. Caso confirme todos arquivos originais serão apagados e você tera apenas seu(s) arquivo(s) de consolidação de migrations. Caso contrário, a exclusão não será feita. Você poderá analisar o que foi gerado, sem apagar os arquivos originais, porém você deve excluir os arquivos originas antes de prosseguir. Manter os arquivos e rodar novamente um comando upgrade ou downgrade de versões de migrações irá gerar um conflito de versões, pois todos os arquivos já foram consolidados em um único arquivo.
 
