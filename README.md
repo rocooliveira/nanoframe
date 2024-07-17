@@ -46,7 +46,7 @@ Você também pode especificar mais de um método permitido passando cada um sep
 Você pode definir subnamespaces dentro de suas rotas usando colchetes. Por exemplo:
 
 ```php
-// routes.php
+// Routes.php
 
 return [
     'admin[GET]' => 'admin\[Admin\AdminController]',
