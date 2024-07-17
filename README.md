@@ -55,13 +55,13 @@ return [
 ```
 Neste exemplo, a rota `admin` especifica o `AdminController`, e a rota `admin/dashboard` especifica o `DashboardController` ambos dentro do namespace `Admin`.
 
-Por padrão cada controller que criar deve estar dentro do namespace raiz `App/Controller`. No caso acima os controllers foram separados em um sub-namespace  especifico para seu caso de uso, onde o namespace foi definido desta forma  `namespace App/Controller/Admin;`
+Por padrão, cada controller que criar deve estar dentro do namespace raiz `App/Controller`. No caso acima os controllers foram separados em um sub-namespace  específico para seu caso de uso, onde o namespace foi definido desta forma  `namespace App/Controller/Admin;`
 
 ### Controllers
 
 Crie seus controllers no diretório `controller`. Os controllers devem seguir a convenção de nomenclatura PSR-4
 
-Seus controllers devem extender o controller base do Nanoframe o `BaseControler`:
+Seus controllers devem estender o controller base do Nanoframe o `BaseControler`:
 
 ```php
 // HomeController.php
@@ -189,7 +189,7 @@ class OrderModel extends BaseModel
 
 #### Views
 
-Arquivos de views devem ser alocados dentro do diretório `app/Views`  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instancia deste Loader em `$this->load`
+Arquivos de views devem ser alocados dentro do diretório `app/Views`  e deve ser utilizado o `Loader` do core do NanoFrame para carrega-los. O `BaseController` já possui uma instância deste Loader em `$this->load`
 
 ```php
 // HomeController.php
@@ -212,7 +212,7 @@ class HomeController extends BaseController
 
 No exemplo acima o arquivo de view `contato.php` e exibido na tela e também são passadas duas variáveis que estarão disponíveis neste arquivo de view utilizando `$valor` e `$cor` 
 
-Ainda é disponível um terceiro parâmetro no métodom view que por padrão é setado como FALSE.  Caso seja setado como true "`$html = Loader::view('contato', $data, TRUE)`" ao invés de imprimir os dados na tela a função retorna a string com o html compilado desta view.
+Ainda é disponível um terceiro parâmetro no método view que por padrão é setado como FALSE.  Caso seja setado como true "`$html = Loader::view('contato', $data, TRUE)`" ao invés de imprimir os dados na tela a função retorna a string com o html compilado desta view.
 
 #### Utils
 
@@ -247,7 +247,7 @@ No exemplo acima o arquivo `meuUtil.php` é carregado e a função `minhaFuncao`
 
 ### Requisições do servidor (input)
 A class `Input` pode ser utilizada para recuperar dados de requisições. 
-O `BaseController` já possui uma instancia deste da classe Input em `$this->input`. Por padrão já são aplicado filtros básicos para limpeza da string para manter a segurança dos dados, para evitar a limpeza basta passar o segundo parâmetor como `FALSE`
+O `BaseController` já possui uma instancia deste da classe Input em `$this->input`. Por padrão já são aplicado filtros básicos para limpeza da string para manter a segurança dos dados, para evitar a limpeza basta passar o segundo parâmetro como `FALSE`
 
 
 ```php
@@ -279,18 +279,18 @@ O mesmo pode ser usado seguindo o padrão do exemplo acima para `post` com `$thi
 
 
 ### Migrations
-Um sistema de migrations focado em MYSQL está diponível para ser utilizado via CLI. 
+Um sistema de migrations focado em MYSQL está disponível para ser utilizado via CLI. 
 Basta acessar o terminal e utilizar o comando:
 ```
 php cli.php Command/Migrate parametro_desejado 
 ```
-Os parámetros diponíveis são:
+Os parâmetros disponíveis são:
 
 **make**: Método de criação do arquivo de migração.
 
 **latest**: Migra para a versão de migração mais recente.
 
-**rollback**: Migra para versão estpulada.
+**rollback**: Migra para versão estipulada.
 
 **combine**: Cria um arquivo consolidado com todas as migrações disponíveis
 
@@ -298,11 +298,11 @@ Os parámetros diponíveis são:
 
 **help**: Exibe a seção de ajuda.
 
-O diretório onde serão armazenados os arquivos de migration fica em `app/Migrations` (diretorio reservado exclusivamente para este propósito).
+O diretório onde serão armazenados os arquivos de migration fica em `app/Migrations` (diretório reservado exclusivamente para este propósito).
 
 Ao utilizar o sistema de migration será criado automaticamente uma tabela `migrations` em seu banco de dados para fazer o controle de verão das suas migrações no banco.
 
-Ao utilizar o comando **make** será solicitado o nome da sua migration (*ex: create_user_table*) e o nome da tabela: (*ex: user*). Um arquivo com o nome de migration acrescido de um sufixo com timestamp será criado no diretorio de migrations. Dentro desse arquivo você deverá utilizar as funções  up() e donw() para setar as alterações no seu banco de dados, criando uma atualização no banco inserindo novas estruturas ou desfazendo as alterações respectivamente. Todos os arquivos de migração extendem as funcionalidades da classe `DatabaseForge`, com funções de criação, exclusão e de tabela, crianção de chaves estrangeira, índices e outros. Utilize os metodos fornecidos por essa classe para desenvolver suas migrations.
+Ao utilizar o comando **make** será solicitado o nome da sua migration (*ex: create_user_table*) e o nome da tabela: (*ex: user*). Um arquivo com o nome de migration acrescido de um sufixo com timestamp será criado no diretório de migrations. Dentro desse arquivo você deverá utilizar as funções  up() e donw() para setar as alterações no seu banco de dados, criando uma atualização no banco inserindo novas estruturas ou desfazendo as alterações respectivamente. Todos os arquivos de migração extendem as funcionalidades da classe `DatabaseForge`, com funções de criação, exclusão e de tabela, crianção de chaves estrangeira, índices e outros. Utilize os métodos fornecidos por essa classe para desenvolver suas migrations.
 
 Após criar suas migration você poderá migrar seu banco para versão mais recente utilizando o seguinte comando: 
 `php cli.php Command/Migrate latest`
@@ -312,12 +312,24 @@ E para desfazer as alterações migrando para versão anterior você pode utiliz
 
 *Lembrando que o método **down()** deve estar devidamente configurado, visando desfazer as alterações efetuadas com o método **up()***
 
-Utilizando o comando **rollback** você poderá retroceder para uma versão especifica do banco de dados. Será solicitado um numero de versão (timestamp do arquivo).
+Utilizando o comando **rollback** você poderá retroceder para uma versão específica do banco de dados. Será solicitado um número de versão (timestamp do arquivo).
 
-Ao longo do desenvolvimento da sua aplicação seu diretório de `migrations` pode ficar muito "inflado", com muitos arquivos  de migrações conforme sua aplicação cresce. Tendo isso em mente pode ser útil consolidar esse inumeros arquivos em um único arquivo de migração. Isso pode ser bem útil para deixar as coisas mais organizadas. Para fazer isso rode o comando:
+Ao longo do desenvolvimento da sua aplicação seu diretório de `migrations` pode ficar muito "inflado", com muitos arquivos  de migrações conforme sua aplicação cresce. Tendo isso em mente pode ser útil consolidar esse inúmeros arquivos em um único arquivo de migração. Isso pode ser bem útil para deixar as coisas mais organizadas. Para fazer isso rode o comando:
 `php cli.php Command/Migrate combine`
 
 Todos arquivos de migração existentes serão consolidados em um único arquivo. Ao final do processo será questionado se deseja apagar os arquivos originais. Caso confirme todos arquivos originais serão apagados e você tera apenas seu(s) arquivo(s) de consolidação de migrations. Caso contrário, a exclusão não será feita. Você poderá analisar o que foi gerado, sem apagar os arquivos originais, porém você deve excluir os arquivos originas antes de prosseguir. Manter os arquivos e rodar novamente um comando upgrade ou downgrade de versões de migrações irá gerar um conflito de versões, pois todos os arquivos já foram consolidados em um único arquivo.
+
+
+### Entity
+Você também pode usar um comando padrão do Nanoframe para facilitar o processo de criar suas entidades do banco de dados
+Basta acessar o terminal e utilizar o comando:
+```
+php cli.php Command/Entity create 
+```
+
+O sistema irá perguntar de deseja criar entidades para todas tabelas do banco de dados ou especificar diretamente alguma.
+As classes referentes serão salvas em `app/Entity`.
+Estas classes são apenas um modelo básico, ajuste o arquivo gerado conforme sua necessidade. 
 
 
 
