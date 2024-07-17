@@ -46,6 +46,12 @@ class Entity extends Prompt
 		}
 
 		foreach ($tables as $table) {
+
+			// ignora tabela padrao de migrations do sistema
+			if( $table == 'migrations' ){
+				continue;
+			}
+
 			$columns = $this->pdo->query("DESCRIBE $table")->fetchAll(\PDO::FETCH_ASSOC);
 			$className = ucfirst($table);
 
