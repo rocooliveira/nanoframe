@@ -96,10 +96,10 @@ class Router
 
       $pathUtil = self::getUriPart($path);
       
-      $filePath = APP_PATH . "/controller/{$pathUtil}/{$className}.php";
+      $filePath = APP_PATH . "/Controller/{$pathUtil}/{$className}.php";
 
     } else {
-        $filePath = APP_PATH . "/controller/{$path}.php";
+        $filePath = APP_PATH . "/Controller/{$path}.php";
         $className = array_pop($handlerParts);
 
 

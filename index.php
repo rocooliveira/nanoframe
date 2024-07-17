@@ -2,7 +2,7 @@
 namespace Nanoframe;
 
 
-require __DIR__ . '/app/config/constants.php';
+require __DIR__ . '/app/Config/constants.php';
 require __DIR__ . '/vendor/autoload.php';
 
 

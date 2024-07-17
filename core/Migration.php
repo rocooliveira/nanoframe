@@ -11,7 +11,7 @@ use \mysqli;
  */
 class Migration 
 {
-	protected $migrationPath = APP_PATH . '/migrations/';
+	protected $migrationPath = APP_PATH . '/Migrations/';
 
 	protected $host;
 	protected $database;

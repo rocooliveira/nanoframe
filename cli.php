@@ -6,7 +6,7 @@ namespace Nanoframe;
 set_time_limit(0);
 ini_set('memory_limit', '256M');
 
-require __DIR__ . '/app/config/constants.php';
+require __DIR__ . '/app/Config/constants.php';
 require __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;

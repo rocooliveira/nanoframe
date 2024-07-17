@@ -9,7 +9,7 @@ class Loader
 
 	public static function utils($utilFile)
 	{
-		$utilsPath = APP_PATH . '/utils';
+		$utilsPath = APP_PATH . '/Utils';
 
 		if( !is_array($utilFile) ){
 			$utilFile = [$utilFile];
@@ -31,7 +31,7 @@ class Loader
 	public static function view($view, $data = [], $returnHtmlString  = FALSE)
 	{
 
-		$viewPath = APP_PATH . '/view';
+		$viewPath = APP_PATH . '/View';
 
 		if( ! file_exists("$viewPath/{$view}.php") ){
       http_response_code(404);
