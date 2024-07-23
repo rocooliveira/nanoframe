@@ -7,6 +7,11 @@ use \Exception;
 class Loader
 {
 
+	public function __construct()
+	{
+
+	}
+
 	public static function utils($utilFile)
 	{
 		$utilsPath = APP_PATH . '/Utils';

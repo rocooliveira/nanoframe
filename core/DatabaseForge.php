@@ -101,7 +101,7 @@ class DatabaseForge
 
       // Caso especial: se o valor padrão começar com "NULL" ou outras expressões SQL especiais
       if (preg_match('/^(NULL|CURRENT_TIMESTAMP|CURRENT_DATE|NOW|ON UPDATE)/i', $attribute['default'])) {
-        $defaultValue = strtoupper($attribute['default']); // Make it uppercase for consistency
+        $defaultValue = strtoupper($attribute['default']); 
       } else {
         // usa aspas para strings
         $defaultValue = "'" . addslashes($attribute['default']) . "'";
