@@ -99,27 +99,25 @@ class DatabaseForge
 
       if (is_string($attribute['default'])) {
 
-      // Caso especial: se o valor padrão começar com "NULL" ou outras expressões SQL especiais
-      if (preg_match('/^(NULL|CURRENT_TIMESTAMP|CURRENT_DATE|NOW|ON UPDATE)/i', $attribute['default'])) {
-        $defaultValue = strtoupper($attribute['default']); 
-      } else {
-        // usa aspas para strings
-        $defaultValue = "'" . addslashes($attribute['default']) . "'";
-      }
+        // Caso especial: se o valor padrão começar com "NULL" ou outras expressões SQL especiais
+        if (preg_match('/^(NULL|CURRENT_TIMESTAMP|CURRENT_DATE|NOW|ON UPDATE)/i', $attribute['default'])) {
+          $defaultValue = strtoupper($attribute['default']); 
+        } else {
+          // usa aspas para strings
+          $defaultValue = "'" . addslashes($attribute['default']) . "'";
+        }
 
       } elseif (is_numeric($attribute['default']) || is_bool($attribute['default'])) {
         // Para tipos numericos e boleanos nao usa aspas
         // converte boleano true/false para 1/0
 
-        if (is_bool($attribute['default'])) {
-            $defaultValue = $attribute['default'] ? 1 : 0;
-        }
+        $defaultValue = $attribute['default'] ? 1 : 0;
 
       } else {
         $defaultValue = 'NULL';
       }
 
-      $field[] = !empty($attribute['default']) ? "DEFAULT $defaultValue" : 'DEFAULT NULL';
+      $field[] = isset($defaultValue) ? "DEFAULT $defaultValue" : 'DEFAULT NULL';
 
       if( strpos( $attribute['default'], 'NULL' ) !== FALSE && $nullDef == 'NOT NULL' ){
         throw new \PDOException("Campo $columnName definido como 'NOT NULL' e com padrão setado como 'null' ");
