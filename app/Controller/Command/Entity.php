@@ -66,7 +66,8 @@ class Entity extends Prompt
 				}
 			}
 
-			$classContent = "<?php\n\n";
+			$classContent = "<?php\n";
+			$classContent .= "namespace App\Entity;\n\n";
 			$classContent .= "class $className {\n\n";
 
 			foreach ($columns as $column) {
