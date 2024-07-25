@@ -748,6 +748,7 @@ class Migrate extends Migration
 			    'created_at' => [
 				    'type'        => 'TIMESTAMP',
 				    'default'     => 'CURRENT_TIMESTAMP()',
+				    'null'				=> TRUE
 			    ],
 			    'updated_at' => [
 				    'type'        => 'TIMESTAMP',

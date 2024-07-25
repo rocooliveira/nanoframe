@@ -75,38 +75,39 @@ class Entity extends Prompt
 			}
 
 			$classContent .= "\n  public function __construct(\$data = []) {\n";
-			foreach ($columns as $column) {
+      foreach ($columns as $column) {
         $field = ucfirst($column['Field']);
         $classContent .= "    \$this->set$field(\$data['{$column['Field']}'] ?? null);\n";
-			}
-			$classContent .= "  }\n\n";
+      }
+      $classContent .= "  }\n\n";
 
-			foreach ($columns as $column) {
-				$field = ucfirst($column['Field']);
-				$type = $this->mapColumnTypeToPHP($column['Type']);
-				$nullable = $column['Null'] === 'YES' ? 'true' : 'false';
+      foreach ($columns as $column) {
+        $field = ucfirst($column['Field']);
+        $type = $this->mapColumnTypeToPHP($column['Type']);
+        $nullable = $column['Null'] === 'YES';
 
+        $classContent .= "  public function get$field()";
+        $classContent .= $nullable ? ": ?$type" : ": $type";
+        $classContent .= " {\n";
+        $classContent .= "    return \$this->{$column['Field']};\n";
+        $classContent .= "  }\n\n";
 
-				$classContent .= "  public function get$field(): $type {\n";
-				$classContent .= "    return \$this->{$column['Field']};\n";
-				$classContent .= "  }\n\n";
-
-
-				$classContent .= "  public function set$field($type \$value): void {\n";
-        if ($nullable === 'false') {
+        $classContent .= "  public function set$field(";
+        $classContent .= $nullable ? "?$type" : "$type";
+        $classContent .= " \$value): void {\n";
+        if (!$nullable) {
           $classContent .= "    if (\$value === null) {\n";
           $classContent .= "      throw new \InvalidArgumentException('{$column['Field']} não pode ser nulo');\n";
           $classContent .= "    }\n";
         }
-				$classContent .= "    if (!is_{$type}(\$value)) {\n";
-				$classContent .= "      throw new \InvalidArgumentException('O tipo esperado para {$column['Field']} é {$type}');\n";
-				$classContent .= "    }\n";
+        $classContent .= "    if (\$value !== null && !is_$type(\$value)) {\n";
+        $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para {$column['Field']} é: {$type}');\n";
+        $classContent .= "    }\n";
+        $classContent .= "    \$this->{$column['Field']} = \$value;\n";
+        $classContent .= "  }\n\n";
+      }
 
-				$classContent .= "    \$this->{$column['Field']} = \$value;\n";
-				$classContent .= "  }\n\n";
-			}
-
-			$classContent .= "}\n";
+      $classContent .= "}\n";
 
 			file_put_contents($filePath, $classContent);
 			
