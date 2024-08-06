@@ -75,16 +75,27 @@ class Entity extends Prompt
 			}
 
 			$classContent .= "\n  public function __construct(\$data = []) {\n";
+			
+      $classContent .= "    if (is_object(\$data)) {\n";
+      $classContent .= "      \$data = (array) \$data;\n";
+      $classContent .= "    }\n";
+
       foreach ($columns as $column) {
         $field = ucfirst($column['Field']);
         $classContent .= "    \$this->set$field(\$data['{$column['Field']}'] ?? null);\n";
       }
       $classContent .= "  }\n\n";
 
+      $classContent .= "  public function toArray(array \$omitFields = []): array {\n";
+      $classContent .= "    \$data = get_object_vars(\$this);\n";
+      $classContent .= "    return array_diff_key(\$data, array_flip(\$omitFields));\n";
+      $classContent .= "  }\n\n";
+
       foreach ($columns as $column) {
         $field = ucfirst($column['Field']);
         $type = $this->mapColumnTypeToPHP($column['Type']);
         $nullable = $column['Null'] === 'YES';
+        $autoIncrement = strpos($column['Extra'], 'auto_increment') !== false;
 
         $classContent .= "  public function get$field()";
         $classContent .= $nullable ? ": ?$type" : ": $type";
@@ -93,16 +104,33 @@ class Entity extends Prompt
         $classContent .= "  }\n\n";
 
         $classContent .= "  public function set$field(";
-        $classContent .= $nullable ? "?$type" : "$type";
-        $classContent .= " \$value): void {\n";
-        if (!$nullable) {
+        $classContent .= "\$value): void {\n";
+
+        if (!$nullable && !$autoIncrement) {
           $classContent .= "    if (\$value === null) {\n";
           $classContent .= "      throw new \InvalidArgumentException('{$column['Field']} não pode ser nulo');\n";
           $classContent .= "    }\n";
         }
-        $classContent .= "    if (\$value !== null && !is_$type(\$value)) {\n";
-        $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para {$column['Field']} é: {$type}');\n";
-        $classContent .= "    }\n";
+        
+        if ($type === 'float') {
+          $classContent .= "    if (\$value !== null && !is_float(\$value) && !is_string(\$value)) {\n";
+          $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para for {$column['Field']} é  float or string');\n";
+          $classContent .= "    }\n";
+          $classContent .= "    if (is_string(\$value)) {\n";
+          $classContent .= "      \$value = floatval(\$value);\n";
+          $classContent .= "    }\n";
+        } else {
+        	
+        	if($type == 'int'){
+        		$type = 'numeric';
+        	}
+
+	        $classContent .= "    if (\$value !== null && !is_$type(\$value)) {\n";
+	        $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para {$column['Field']} é: {$type}');\n";
+	        $classContent .= "    }\n";
+
+      	}
+
         $classContent .= "    \$this->{$column['Field']} = \$value;\n";
         $classContent .= "  }\n\n";
       }
