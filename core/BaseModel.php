@@ -8,9 +8,8 @@ class BaseModel {
   
   public function __construct() {
 
-    $this->db = new QueryBuilder;
+    $this->db = QueryBuilder::getInstance();
 
   }
 
 }
-

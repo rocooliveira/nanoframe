@@ -5,6 +5,8 @@ namespace Nanoframe\Core;
 use \PDO;
 
 class QueryBuilder {
+  protected static $instance = null;
+  
   private $host;
   private $dbname;
   private $username;
@@ -14,7 +16,11 @@ class QueryBuilder {
   private $table;
   private $select = '*';
   private $where = '';
+  private $orWhere = '';
   private $whereIn = '';
+  private $join = '';
+  private $groupBy = '';
+  private $having = '';
 
   private $orderBy = '';
   private $limit = '';
@@ -22,6 +28,9 @@ class QueryBuilder {
   private $params = [];
 
   private $clausesAndParams = [];
+
+
+  private $lastQuery = '';
   
 
   public function __construct() {
@@ -44,6 +53,13 @@ class QueryBuilder {
     }
   }
 
+  public static function getInstance() {
+    if (self::$instance === null) {
+      self::$instance = new self();
+    }
+    return self::$instance;
+  }
+
   public function beginTransaction()
   {
     if (!$this->conn) {
@@ -63,6 +79,11 @@ class QueryBuilder {
     $this->conn->rollBack();
   }
 
+  public function lastQuery()
+  {
+    return $this->lastQuery;
+  }
+
   public function table($tableName) {
     $this->table = $tableName;
     return $this;
@@ -78,8 +99,26 @@ class QueryBuilder {
   }
 
   public function where($condition, $params = []) {
-    $this->where = "WHERE {$condition}";
-    $this->params = $params;
+
+    if( $this->where || $this->whereIn || $this->orWhere){
+      $this->where .= " AND {$condition}" ;
+      $this->params = array_merge($this->params, $params);
+    }else{
+      $this->where = "WHERE {$condition}";
+      $this->params = $params;
+    }
+    return $this;
+  }
+
+  public function orWhere($condition, $params = []) {
+
+    if( $this->where || $this->whereIn || $this->orWhere){
+      $this->where .= " OR {$condition}" ;
+      $this->params = array_merge($this->params, $params);
+    }else{
+      $this->where = "WHERE {$condition}";
+      $this->params = $params;
+    }
     return $this;
   }
 
@@ -87,12 +126,30 @@ class QueryBuilder {
 
     $placeholders = implode(', ', array_fill(0, count($params), '?'));
 
-    $this->whereIn = (!$this->where)
-     ? "WHERE {$indexColumn} IN (" .$placeholders . ")"
-     : "AND {$indexColumn} IN (" .$placeholders . ")";
+    $this->whereIn .= ( $this->where || $this->whereIn || $this->orWhere)
+     ? " AND {$indexColumn} IN (" .$placeholders . ")"
+     : " WHERE {$indexColumn} IN (" .$placeholders . ")";
 
     $this->params = array_merge($this->params, $params);
 
+    return $this;
+  }
+
+  public function join($table, $condition, $type = 'INNER')
+  {
+    $this->join .= "{$type} JOIN {$table} ON {$condition}";
+    return $this;
+  }
+
+  public function having($condition)
+  {
+    $this->having = $condition;
+    return $this;
+  }
+
+  public function groupBy($by)
+  {
+    $this->groupBy = $by;
     return $this;
   }
 
@@ -106,15 +163,41 @@ class QueryBuilder {
     return $this;
   }
 
+  private function sqlSelectStringMount()
+  {
+    $sql = "SELECT {$this->select} FROM {$this->table}";
+
+    $properties = [
+      $this->join,
+      $this->where,
+      $this->whereIn,
+      $this->orWhere,
+      $this->groupBy,
+      $this->having,
+      $this->orderBy,
+      $this->limit,
+    ];
+
+    foreach ($properties as $prop) {
+      if(!empty($prop)){
+        $sql .= " $prop";
+      }
+    }
+
+    return $sql;
+  }
+
+
   public function getArray() {
-    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} {$this->limit}";
+    $sql = $this->sqlSelectStringMount();
+
     $result = $this->_query($sql, $this->params);
 
     return $result->fetchAll(PDO::FETCH_ASSOC);
   }
 
   public function get() {
-    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} {$this->limit}";
+    $sql = $this->sqlSelectStringMount();
 
     $result = $this->_query($sql, $this->params);
 
@@ -122,11 +205,16 @@ class QueryBuilder {
   }
 
 
-  public function getRow() {
-    $sql = "SELECT {$this->select} FROM {$this->table} {$this->where} {$this->whereIn} {$this->orderBy} LIMIT 1";
+  public function getRow($field = '') {
+    $this->limit(1);
+
+    $sql = $this->sqlSelectStringMount();
+
     $result = $this->_query($sql, $this->params);
 
-    return $result->fetchAll(PDO::FETCH_OBJ)[0] ?? NULL;
+    $data = $result->fetchAll(PDO::FETCH_OBJ)[0] ?? NULL;
+
+    return $field ? ($data->$field ?? NULL) : $data;
   }
 
 
@@ -407,6 +495,27 @@ class QueryBuilder {
     }
   }
 
+
+  private function getSqlWithParams($sql, $params) {
+
+    $indexed = $params == array_values($params);
+
+    foreach ($params as $key => $value) {
+      if (is_string($value)) {
+        $value = "'$value'";
+      } elseif ($value === null) {
+        $value = 'NULL';
+      }
+      if ($indexed) {
+        $sql = preg_replace('/\?/', $value, $sql, 1);
+      } else {
+        $sql = str_replace($key, $value, $sql);
+      }
+    }
+    return $sql;
+  }
+
+
   private function _query($sql, $params = []) {
     if (!$this->conn) {
       $this->connect();
@@ -417,6 +526,8 @@ class QueryBuilder {
       $statement = $this->conn->prepare($sql);
 
       $statement->execute($params);
+
+      $this->lastQuery = $this->getSqlWithParams($sql, $params);
 
       $this->resetWrite();
 
@@ -433,8 +544,12 @@ class QueryBuilder {
   {
     $this->table = '';
     $this->select = '*';
+    $this->join = '';
     $this->where = '';
+    $this->orWhere = '';
     $this->whereIn = '';
+    $this->groupBy = '';
+    $this->having = '';
     $this->orderBy = '';
     $this->limit = '';
     $this->params = [];
@@ -444,8 +559,12 @@ class QueryBuilder {
     $this->clausesAndParams = [
       'table'   => $this->table,
       'select'  => $this->select,
+      'join'    => $this->join,
       'where'   => $this->where,
+      'orWhere' => $this->orWhere,
       'whereIn' => $this->whereIn,
+      'groupBy' => $this->groupBy,
+      'having'  => $this->having,
       'orderBy' => $this->orderBy,
       'limit'   => $this->limit,
       'params'  => $this->params,
@@ -458,11 +577,15 @@ class QueryBuilder {
 
     $this->table   = $this->clausesAndParams['table'];
     $this->select  = $this->clausesAndParams['select'];
+    $this->join    = $this->clausesAndParams['join'];
     $this->where   = $this->clausesAndParams['where'];
     $this->whereIn = $this->clausesAndParams['whereIn'];
+    $this->orWhere = $this->clausesAndParams['orWhere'];
+    $this->groupBy = $this->clausesAndParams['groupBy'];
+    $this->having  = $this->clausesAndParams['having'];
     $this->orderBy = $this->clausesAndParams['orderBy'];
-    $this->limit   = $this->clausesAndParams['limit'  ];
-    $this->params  = $this->clausesAndParams['params' ];
+    $this->limit   = $this->clausesAndParams['limit'];
+    $this->params  = $this->clausesAndParams['params'];
 
      
   }
