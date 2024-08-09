@@ -30,8 +30,8 @@ Definia suas rotas no arquivo `route.php` no diretório `app/Config`
 
 return [
     'index' => 'HomeController',
-    'about' => 'AboutController',
-    'contact[POST]' => 'ContactController',
+    'sobre' => 'AboutController',
+    'contato[POST]' => 'ContactController',
     'admin[GET]' => 'admin\AdminController',
     'admin/dashboard[GET]' => 'admin\DashboardController',
 ];
@@ -41,7 +41,7 @@ return [
 
 Você também pode especificar mais de um método permitido passando cada um separado por virgula entre os colchetes. ex: `[GET,POST]` (Por padrão o sistema assume todas rotas com sem métodos definidos como `GET`)
 
-### Subnamespaces em Rotas
+#### Subnamespaces em Rotas
 
 Você pode definir subnamespaces dentro de suas rotas usando colchetes. Por exemplo:
 
@@ -56,6 +56,39 @@ return [
 Neste exemplo, a rota `admin` especifica o `AdminController`, e a rota `admin/dashboard` especifica o `DashboardController` ambos dentro do namespace `Admin`.
 
 Por padrão, cada controller que criar deve estar dentro do namespace raiz `App/Controller`. No caso acima os controllers foram separados em um sub-namespace  específico para seu caso de uso, onde o namespace foi definido desta forma  `namespace App/Controller/Admin;`
+
+#### Curingas
+Você pode usar alguns curingas que são aliases para expressões regulares que serão aplicados nas rotas.
+##### (:any)
+```php
+// Routes.php
+return [
+    'admin/dashboard/produtos/(:any)' => 'admin\ProductController',
+];
+```
+A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos/" qualquer segmento de url alfanumérico
+
+##### (:num)
+```php
+// Routes.php
+return [
+    'admin/dashboard/produto/(:num)' => 'admin\ProductController',
+];
+```
+A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos" qualquer segmento de url numérico
+
+
+##### Fronteia enter palavras: \b(str1|str2)\b
+
+```php
+// Routes.php
+return [
+    '/admin/\b(painel|dashboard)\b)' => 'admin\DashboardController',
+];
+```
+No exemplo acima o objetivo é que a rota seja válida se ela começar com "admin/" e o próximo segmento seja "painel" ou "dashboard",
+
+
 
 ### Controllers
 
@@ -184,6 +217,65 @@ class OrderModel extends BaseModel
 -   **`query($sql, $params = [])`**: Permite a execução direta de consultas SQL personalizadas.
 -   **`resetWrite()`**: Reinicia todas as propriedades de escrita para o estado inicial.
 
+#### Transações 
+Os métodos para gerenciar transações no banco de dados também estarão dispóniveis no seu model através do QueryBuilder.
+Você pode usar os métodos: "beginTransaction", "commit", "rollBack" para iniciar,  confirmar ou desfazer as transações.
+Exemplo de trecho de codigo dentro de um model:
+```php
+$this->db->beginTransaction();
+
+try {
+    // Primeira operação
+    $this->db->table('table1')->insert([
+        'column1' => 'value1',
+        'column2' => 'value2'
+    ]);
+
+    // Segunda operação
+    $this->db->table('table2')->update([
+        'column1' => 'new_value'
+    ], ['id' => 1]);
+
+    // Commit da transação
+    $this->db->commit();
+
+    echo "Transação concluída com sucesso!";
+} catch (\Exception $e) {
+    // Rollback da transação em caso de erro
+    $this->db->rollback();
+    echo "Erro: " . $e->getMessage();
+}
+```
+
+Você também pode precisar chamar métodos de Models diferntes dentro do seu controler e executar várias operações em tabela distentas no banco de dados.
+Para esses casos você pode utilizar a classe **Transactor** e manter o controlle da transação quando utiliza vários models em seguencia.
+
+*Trecho dentro de um método de um possível controller:*
+```php
+$transation = new Transactor;
+
+$userModel = new UserModel;
+$docModel = new DocModel;
+$addressModel = new AddressModel;
+
+try{
+
+    $transation->beginTransaction();
+
+    $userId = $userModel->create($dataUser);
+
+    $docId = $docModel->create($dataDocs, $userId);
+
+    $addressModel->create($dataAddress, $userId);
+
+    $transation->commit();
+
+} catch (\Exception $e) {
+    // Rollback da transação em caso de erro
+    $transation->rollback();
+    echo "Erro: " . $e->getMessage();
+}
+```
 
 ### Loader
 
