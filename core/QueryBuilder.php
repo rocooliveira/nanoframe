@@ -227,12 +227,13 @@ class QueryBuilder {
     $set = '';
     foreach ($data as $column => $value) {
       $set .= "{$column} = ?, ";
-      $this->params[] = $value;
+      $params[] = $value;
     }
+
     $set = rtrim($set, ', ');
 
     $sql = "UPDATE {$this->table} SET {$set} {$this->where}";
-    $this->_query($sql, $this->params);
+    $this->_query($sql, array_merge($params, $this->params) );
   }
 
   public function updateBatch($data, $indexColumn) {
