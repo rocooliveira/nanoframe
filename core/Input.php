@@ -112,7 +112,7 @@ class Input
 		}, ARRAY_FILTER_USE_BOTH);
 
 
-		return $arrayRequest ? $ret : $ret[ $index[0] ];
+		return $arrayRequest ? $ret : ($ret[ $index[0] ] ?? NULL);
 
 	}
 
