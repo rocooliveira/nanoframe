@@ -18,7 +18,7 @@ class QueryBuilder {
   private $where = '';
   private $orWhere = '';
   private $whereIn = '';
-  private $join = '';
+  private $join = [];
   private $groupBy = '';
   private $having = '';
 
@@ -137,7 +137,7 @@ class QueryBuilder {
 
   public function join($table, $condition, $type = 'INNER')
   {
-    $this->join .= "{$type} JOIN {$table} ON {$condition}";
+    $this->join[] = "{$type} JOIN {$table} ON {$condition}";
     return $this;
   }
 
@@ -149,7 +149,7 @@ class QueryBuilder {
 
   public function groupBy($by)
   {
-    $this->groupBy = $by;
+    $this->groupBy = "GROUP BY $by";
     return $this;
   }
 
@@ -167,8 +167,9 @@ class QueryBuilder {
   {
     $sql = "SELECT {$this->select} FROM {$this->table}";
 
+
     $properties = [
-      $this->join,
+      implode(' ', $this->join),
       $this->where,
       $this->whereIn,
       $this->orWhere,
@@ -250,7 +251,7 @@ class QueryBuilder {
 
       $set = '';
       foreach ($row as $column => $value) {
-          $set .= "{$column} = ?, ";
+        $set .= "{$column} = ?, ";
       }
       $set = rtrim($set, ', ');
 
@@ -545,7 +546,7 @@ class QueryBuilder {
   {
     $this->table = '';
     $this->select = '*';
-    $this->join = '';
+    $this->join = [];
     $this->where = '';
     $this->orWhere = '';
     $this->whereIn = '';
