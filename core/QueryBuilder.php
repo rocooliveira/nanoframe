@@ -15,9 +15,10 @@ class QueryBuilder {
 
   private $table;
   private $select = '*';
-  private $where = '';
-  private $orWhere = '';
-  private $whereIn = '';
+
+
+  private $conditions = [];
+
   private $join = [];
   private $groupBy = '';
   private $having = '';
@@ -31,6 +32,7 @@ class QueryBuilder {
 
 
   private $lastQuery = '';
+  private $affectedRows = 0;
   
 
   public function __construct() {
@@ -98,42 +100,124 @@ class QueryBuilder {
     return $this;
   }
 
-  public function where($condition, $params = []) {
 
-    if( $this->where || $this->whereIn || $this->orWhere){
-      $this->where .= " AND {$condition}" ;
-      $this->params = array_merge($this->params, $params);
+  private function _where($logicalOperator, $field, $value = null ) {
+
+    if (is_array($field)) {
+
+      $i = 0;
+
+      foreach ($field as $key => $val) {
+
+        if (strpos($key, ' ') !== false) {
+          list($column, $operator) = explode(' ', $key, 2);
+        } else {
+          $column = $key;
+          $operator = '=';
+        }
+
+        $startCond = $this->conditions || $i ? $logicalOperator : 'WHERE';
+        $this->conditions[] = "$startCond $column $operator ?";
+        $value[] = $val;
+
+        $i++;
+      }
+
     }else{
-      $this->where = "WHERE {$condition}";
-      $this->params = $params;
+
+      if (strpos($field, ' ') !== false) {
+          list($column, $operator) = explode(' ', $field, 2);
+      } else {
+          $column = $field;
+          $operator = '=';
+      }
+
+      $startCond = $this->conditions ? $logicalOperator : 'WHERE';
+      $this->conditions[]  = "$startCond $column $operator ?";
+
     }
+
+
+    if( $this->conditions ){
+
+      $this->params = array_merge($this->params, is_array($value) ? $value : [$value]);
+    }else{
+
+      $this->params = is_array($value) ? $value : [$value];
+    }
+
     return $this;
   }
 
-  public function orWhere($condition, $params = []) {
+  public function where( $field, $value = null ) {
 
-    if( $this->where || $this->whereIn || $this->orWhere){
-      $this->where .= " OR {$condition}" ;
-      $this->params = array_merge($this->params, $params);
-    }else{
-      $this->where = "WHERE {$condition}";
-      $this->params = $params;
-    }
+    $this->_where('AND', $field, $value);
+
     return $this;
   }
 
-  public function whereIn($indexColumn, $params = []) {
+  public function orWhere($field, $value = []) {
+
+    $this->_where('OR', $field, $value);
+    
+    return $this;
+  }
+
+  private function _whereIn($logicalOperator, $indexColumn, $params = []) {
 
     $placeholders = implode(', ', array_fill(0, count($params), '?'));
 
-    $this->whereIn .= ( $this->where || $this->whereIn || $this->orWhere)
-     ? " AND {$indexColumn} IN (" .$placeholders . ")"
-     : " WHERE {$indexColumn} IN (" .$placeholders . ")";
+    $this->conditions[] = $this->conditions
+     ? "{$logicalOperator} {$indexColumn} IN (" .$placeholders . ")"
+     : "WHERE {$indexColumn} IN (" .$placeholders . ")";
 
     $this->params = array_merge($this->params, $params);
 
     return $this;
   }
+
+  public function whereIn($indexColumn, $params = []) {
+
+    $this->_whereIn('AND', $indexColumn, $params);
+    return $this;
+  }
+
+  public function orWhereIn($indexColumn, $params = []) {
+
+    $this->_whereIn('OR', $indexColumn, $params);
+    return $this;
+  }
+
+
+  private function _like($logicalOperator, $column, $value)
+  {
+
+    if( $this->conditions ){
+      $this->conditions[] = "$logicalOperator $column LIKE ?";
+      $this->params = array_merge($this->params, ["%$value%"]);
+    }else{
+      $this->conditions[] = "WHERE $column LIKE ?";
+      $this->params = ["%$value%"];
+    }
+
+    return $this;
+  }
+
+  public function like($column, $value)
+  {
+
+    $this->_like('AND', $column, $value);
+
+    return $this;
+  }
+
+  public function orLike($column, $value)
+  {
+    $this->_like('OR', $column, $value);
+
+    return $this;
+  }
+
 
   public function join($table, $condition, $type = 'INNER')
   {
@@ -168,16 +252,18 @@ class QueryBuilder {
     $sql = "SELECT {$this->select} FROM {$this->table}";
 
 
-    $properties = [
-      implode(' ', $this->join),
-      $this->where,
-      $this->whereIn,
-      $this->orWhere,
+    $properties = [ implode(' ', $this->join) ];
+
+    $properties = array_merge($properties, $this->conditions);
+
+    $properties = array_merge($properties, [
       $this->groupBy,
       $this->having,
       $this->orderBy,
       $this->limit,
-    ];
+    ]);
+
+
 
     foreach ($properties as $prop) {
       if(!empty($prop)){
@@ -233,36 +319,49 @@ class QueryBuilder {
 
     $set = rtrim($set, ', ');
 
-    $sql = "UPDATE {$this->table} SET {$set} {$this->where}";
-    $this->_query($sql, array_merge($params, $this->params) );
+    $conditions = implode(' ', $this->conditions);
+
+    $sql = "UPDATE {$this->table} SET {$set} {$conditions}";
+
+    $this->_query($sql, array_merge($params, $this->params), TRUE );
   }
 
   public function updateBatch($data, $indexColumn) {
     if (empty($data)) {
-        return;
+      return;
     }
 
-    $sql = "UPDATE {$this->table} SET ";
+    $cases = [];
+    $ids = [];
+    $params = [];
 
-    $indexValues = [];
-    foreach ($data as $index => $row) {
-      $indexValues[] = $row[$indexColumn];
-      unset($row[$indexColumn]);
-
-      $set = '';
+    foreach ($data as $row) {
       foreach ($row as $column => $value) {
-        $set .= "{$column} = ?, ";
+        if ($column !== $indexColumn) {
+          $cases[$column][] = "WHEN ? THEN ?";
+          $params[] = $row[$indexColumn]; // Valor do índice (ex: id)
+          $params[] = $value; // Novo valor da coluna
+        }
       }
-      $set = rtrim($set, ', ');
-
-      $sql .= "CASE WHEN {$indexColumn} = ? THEN {$set} ";
+      $ids[] = $row[$indexColumn];
     }
 
-    $sql .= "END WHERE {$indexColumn} IN (" . implode(', ', array_fill(0, count($data), '?')) . ")";
+    $caseSql = '';
+    foreach ($cases as $column => $caseStatements) {
+      $caseSql .= "$column = CASE ";
+      $caseSql .= implode(' ', $caseStatements);
+      $caseSql .= " ELSE $column END, ";
+    }
 
-    $params = array_merge(array_values($data), $indexValues);
+    $caseSql = rtrim($caseSql, ', ');
 
-    $this->_query($sql, $params);
+    $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+    $params = array_merge($params, $ids);
+
+    $sql = "UPDATE {$this->table} SET $caseSql WHERE $indexColumn IN ($placeholders)";
+    
+
+    $this->_query($sql, $params, TRUE);
   }
 
   public function insert($data) {
@@ -275,7 +374,9 @@ class QueryBuilder {
     $values = implode(', ', array_fill(0, count($data), '?'));
 
     $sql = "INSERT INTO {$this->table} ({$columns}) VALUES ({$values})";
-    $this->_query($sql, array_values($data));
+
+
+    $this->_query($sql, array_values($data), TRUE);
   }
 
   public function insertBatch($data) {
@@ -297,7 +398,7 @@ class QueryBuilder {
     $sql = "INSERT INTO {$this->table} ({$columns}) VALUES {$placeholders}";
     $params = array_merge(...$values);
 
-    $this->_query($sql, $params);
+    $this->_query($sql, $params, TRUE);
   }
 
   public function replace($data) {
@@ -307,7 +408,7 @@ class QueryBuilder {
     $sql = "REPLACE INTO {$this->table} ({$columns}) VALUES ({$values})";
 
 
-    $this->_query($sql, array_values($data));
+    $this->_query($sql, array_values($data), TRUE);
   }
 
 
@@ -319,8 +420,6 @@ class QueryBuilder {
     $placeholders = rtrim(str_repeat('?, ', count($data[0])), ', ');
     $values = [];
 
-
-
     foreach ($data as $row) {
       $values[] = array_values($row);
     }
@@ -331,11 +430,15 @@ class QueryBuilder {
 
     $params = array_merge(...$values);
 
-    $this->_query($sql, $params);
+    $this->_query($sql, $params, TRUE);
   }
   
 
-
+  public function affectedRows() {
+    $ret = $this->affectedRows;
+    $this->affectedRows = 0;
+    return $ret;
+  }
 
   private function getBatchReplaceIds($columns, $values) {
     $sql = "SELECT LAST_INSERT_ID() AS id FROM {$this->table} WHERE ({$columns}) IN (" . implode(', ', $values) . ")";
@@ -461,10 +564,41 @@ class QueryBuilder {
   }
 
   public function delete() {
-    $sql = "DELETE FROM {$this->table} {$this->where}";
-    $this->_query($sql, $this->params);
+    $conditions = implode(' ', $this->conditions);
+
+    $sql = "DELETE FROM {$this->table} {$conditions}";
+
+    $this->_query($sql, $this->params, TRUE);
   }
 
+
+  public function getNumRows($clearQueryString = FALSE)
+  {
+    if (!$this->conn) {
+      $this->connect();
+    }
+
+    try {
+
+      $sql = $this->sqlSelectStringMount();
+
+      $statement = $this->conn->prepare($sql);
+
+      $statement->execute($this->params);
+
+      $this->lastQuery = $this->getSqlWithParams($sql, $this->params);
+
+      if( $clearQueryString ){
+        $this->resetWrite();
+      }
+
+      return $statement->rowCount();
+
+    } catch (\PDOException $e) {
+
+      die("Query failed: " . $e->getMessage());
+    }
+  }
 
 
   public function query($sql, $params = [], $returnObject = TRUE)
@@ -518,7 +652,7 @@ class QueryBuilder {
   }
 
 
-  private function _query($sql, $params = []) {
+  private function _query($sql, $params = [], $rowCount = TRUE) {
     if (!$this->conn) {
       $this->connect();
     }
@@ -530,6 +664,10 @@ class QueryBuilder {
       $statement->execute($params);
 
       $this->lastQuery = $this->getSqlWithParams($sql, $params);
+
+      if( $rowCount ){
+        $this->affectedRows = $statement->rowCount();
+      }
 
       $this->resetWrite();
 
@@ -544,12 +682,10 @@ class QueryBuilder {
 
   public function resetWrite()
   {
+    $this->conditions = [];
     $this->table = '';
     $this->select = '*';
     $this->join = [];
-    $this->where = '';
-    $this->orWhere = '';
-    $this->whereIn = '';
     $this->groupBy = '';
     $this->having = '';
     $this->orderBy = '';
@@ -562,9 +698,6 @@ class QueryBuilder {
       'table'   => $this->table,
       'select'  => $this->select,
       'join'    => $this->join,
-      'where'   => $this->where,
-      'orWhere' => $this->orWhere,
-      'whereIn' => $this->whereIn,
       'groupBy' => $this->groupBy,
       'having'  => $this->having,
       'orderBy' => $this->orderBy,
@@ -580,15 +713,11 @@ class QueryBuilder {
     $this->table   = $this->clausesAndParams['table'];
     $this->select  = $this->clausesAndParams['select'];
     $this->join    = $this->clausesAndParams['join'];
-    $this->where   = $this->clausesAndParams['where'];
-    $this->whereIn = $this->clausesAndParams['whereIn'];
-    $this->orWhere = $this->clausesAndParams['orWhere'];
     $this->groupBy = $this->clausesAndParams['groupBy'];
     $this->having  = $this->clausesAndParams['having'];
     $this->orderBy = $this->clausesAndParams['orderBy'];
     $this->limit   = $this->clausesAndParams['limit'];
     $this->params  = $this->clausesAndParams['params'];
-
-     
+  
   }
 }
