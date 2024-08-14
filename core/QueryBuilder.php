@@ -101,7 +101,7 @@ class QueryBuilder {
   }
 
 
-  private function _where($logicalOperator, $field, $value = null ) {
+  private function _where($logicalOperator, $field, $value = null, $escape = TRUE ) {
 
     if (is_array($field)) {
 
@@ -117,8 +117,16 @@ class QueryBuilder {
         }
 
         $startCond = $this->conditions || $i ? $logicalOperator : 'WHERE';
-        $this->conditions[] = "$startCond $column $operator ?";
-        $value[] = $val;
+        
+
+        if($escape){
+          $this->conditions[] = "$startCond $column $operator ?";
+          $value[] = $val;
+        }else{
+          $this->conditions[] = "$startCond $column $operator $val";
+          $value = [];
+        }
+
 
         $i++;
       }
@@ -133,7 +141,10 @@ class QueryBuilder {
       }
 
       $startCond = $this->conditions ? $logicalOperator : 'WHERE';
-      $this->conditions[]  = "$startCond $column $operator ?";
+
+      $binding = $escape ? '?' : $value;
+
+      $this->conditions[]  = "$startCond $column $operator $binding";
 
     }
 
@@ -149,16 +160,16 @@ class QueryBuilder {
     return $this;
   }
 
-  public function where( $field, $value = null ) {
+  public function where( $field, $value = null, $escape = TRUE ) {
 
-    $this->_where('AND', $field, $value);
+    $this->_where('AND', $field, $value, $escape);
 
     return $this;
   }
 
-  public function orWhere($field, $value = []) {
+  public function orWhere($field, $value = [], $escape = TRUE) {
 
-    $this->_where('OR', $field, $value);
+    $this->_where('OR', $field, $value, $escape);
     
     return $this;
   }
