@@ -305,7 +305,7 @@ class QueryBuilder {
   }
 
 
-  public function update($data) {
+  public function update($data, $escape = TRUE) {
 
     if(is_object($data)){
       $data = get_object_vars($data);
@@ -313,8 +313,13 @@ class QueryBuilder {
 
     $set = '';
     foreach ($data as $column => $value) {
-      $set .= "{$column} = ?, ";
-      $params[] = $value;
+      if($escape == TRUE){
+        $set .= "{$column} = ?, ";
+        $params[] = $value;
+      }else{
+        $set .= "{$column} = {$value}, ";
+        $params = [];
+      }
     }
 
     $set = rtrim($set, ', ');
