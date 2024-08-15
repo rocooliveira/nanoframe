@@ -44,7 +44,7 @@ class Loader
       exit;
 		}
 
-		extract($data);
+		extract((Array)$data);
 
 		$html = ob_start();
 		
