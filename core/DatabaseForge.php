@@ -28,7 +28,7 @@ class DatabaseForge
     }
   }
 
-  private function executeQuery($sql) {
+  public function executeQuery($sql) {
     try {
       $this->pdo->exec($sql);
     } catch (\PDOException $e) {
