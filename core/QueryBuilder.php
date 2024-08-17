@@ -248,8 +248,17 @@ class QueryBuilder {
     return $this;
   }
 
-  public function orderBy($column, $direction = 'ASC') {
-    $this->orderBy = "ORDER BY {$column} {$direction}";
+  public function orderBy($column, $direction = '') {
+
+    $direction = strtoupper(trim($direction));
+
+    if($direction !== ''){
+      $direction = in_array($direction, array('ASC', 'DESC'), TRUE) ? ' '.$direction : '';
+      $this->orderBy = "ORDER BY {$column}{$direction}";
+    }else{
+      $this->orderBy = "ORDER BY {$column}";
+    }
+
     return $this;
   }
 
