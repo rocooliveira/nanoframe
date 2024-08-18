@@ -114,7 +114,7 @@ class Entity extends Prompt
         
         if ($type === 'float') {
           $classContent .= "    if (\$value !== null && !is_float(\$value) && !is_string(\$value)) {\n";
-          $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para for {$column['Field']} é  float or string');\n";
+          $classContent .= "      throw new \InvalidArgumentException('Tipo esperado para {$column['Field']} é float ou string');\n";
           $classContent .= "    }\n";
           $classContent .= "    if (is_string(\$value)) {\n";
           $classContent .= "      \$value = floatval(\$value);\n";
