@@ -92,8 +92,6 @@ class DatabaseForge
     $nullDef = isset($attribute['null']) && $attribute['null'] ? 'NULL' : 'NOT NULL';
     $field[] = $nullDef; 
 
-    $field[] = !empty($attribute['after']) ? "AFTER {$attribute['after']}" : '';
-
 
     if( isset($attribute['default']) ){
 
@@ -125,6 +123,7 @@ class DatabaseForge
 
     }
 
+    $field[] = !empty($attribute['after']) ? "AFTER {$attribute['after']}" : '';
 
 
     $strFieldAttr = implode(' ', array_filter($field));

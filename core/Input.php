@@ -15,7 +15,7 @@ class Input
 	/**
 	 * @param  string|array|null  $index  indice a ser buscado (string)
 	 * @param  boolean $clearData 				aplica filtros de XSS e outros filtros basicos
-	 * @return array
+	 * @return string|array|null
 	 */
 	public function post($index = NULL, $clearData = TRUE)
 	{
@@ -25,7 +25,7 @@ class Input
 	/**
 	 * @param  string|array|null  $index	indice a ser buscado (string)
 	 * @param  boolean $clearData 				aplica filtros de XSS e outros filtros basicos
-	 * @return array
+	 * @return string|array|null
 	 */
 	public function get($index = NULL, $clearData = TRUE)
 	{
@@ -36,7 +36,7 @@ class Input
 	/**
 	 * @param  string|array|null  $index	indice a ser buscado (string)
 	 * @param  boolean $clearData 				aplica filtros de XSS e outros filtros basicos
-	 * @return array
+	 * @return string|array|null
 	 */
 	public function getPost($index = NULL, $clearData = TRUE)
 	{
@@ -49,7 +49,7 @@ class Input
 	/**
 	 * @param  string|array|null  $index	indice a ser buscado (string)
 	 * @param  boolean $clearData 				aplica filtros de XSS e outros filtros basicos
-	 * @return array
+	 * @return string|array|null
 	 */
 	public function inputStream($index = NULL, $clearData = TRUE)
 	{
