@@ -638,9 +638,11 @@ class QueryBuilder {
 
       $statement->execute($params);
 
-      $sqlExplode = explode(" ", $sql); 
+      $sqlNormalized = trim(preg_replace('/\s+/', ' ', $sql));
 
-      if( strcasecmp($sqlExplode[0], 'select') != 0 ){
+      $sqlExplode = explode(" ", trim($sqlNormalized))[0]; 
+
+      if( strtolower($sqlExplode) !== 'select' ){
         return;
       }
 
