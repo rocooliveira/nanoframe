@@ -124,7 +124,6 @@ class QueryBuilder {
           $value[] = $val;
         }else{
           $this->conditions[] = "$startCond $column $operator $val";
-          $value = [];
         }
 
 
@@ -148,13 +147,14 @@ class QueryBuilder {
 
     }
 
+    if( $escape ){
+      if( $this->conditions ){
 
-    if( $this->conditions ){
+        $this->params = array_merge($this->params, is_array($value) ? $value : [$value]);
+      }else{
 
-      $this->params = array_merge($this->params, is_array($value) ? $value : [$value]);
-    }else{
-
-      $this->params = is_array($value) ? $value : [$value];
+        $this->params = is_array($value) ? $value : [$value];
+      }
     }
 
     return $this;
