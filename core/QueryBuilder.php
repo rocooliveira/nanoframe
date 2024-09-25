@@ -640,9 +640,8 @@ class QueryBuilder {
 
       $sqlNormalized = trim(preg_replace('/\s+/', ' ', $sql));
 
-      $sqlExplode = explode(" ", trim($sqlNormalized))[0]; 
 
-      if( strtolower($sqlExplode) !== 'select' ){
+      if( ! preg_match('/^\s*(SELECT|WITH)/i', $sqlNormalized) ){
         return;
       }
 
