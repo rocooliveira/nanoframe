@@ -351,42 +351,67 @@ class QueryBuilder {
     $this->_query($sql, array_merge($params, $this->params), TRUE );
   }
 
-  public function updateBatch($data, $indexColumn) {
+  public function updateBatch(array $data, string $indexColumn): void {
+ 
     if (empty($data)) {
-      return;
+      throw new \InvalidArgumentException('Nenhum dado fornecido para updateBatch.');
     }
 
     $cases = [];
     $ids = [];
     $params = [];
+    $columns = [];
 
+    // identifica todas as colunas existentes
     foreach ($data as $row) {
+      if (!isset($row[$indexColumn])) {
+        throw new \InvalidArgumentException("Coluna de índice '{$indexColumn}' ausente nos dados.");
+      }
       foreach ($row as $column => $value) {
         if ($column !== $indexColumn) {
-          $cases[$column][] = "WHEN ? THEN ?";
-          $params[] = $row[$indexColumn]; // Valor do índice (ex: id)
-          $params[] = $value; // Novo valor da coluna
+          $columns[$column] = true;
         }
       }
-      $ids[] = $row[$indexColumn];
     }
 
-    $caseSql = '';
+    // constroí os casos WHEN para cada coluna
+    foreach ($columns as $column => $unused) {
+      $cases[$column] = [];
+      foreach ($data as $row) {
+          $id = $row[$indexColumn];
+        if (!in_array($id, $ids)) {
+          $ids[] = $id;
+        }
+        
+        if (isset($row[$column])) {
+          $cases[$column][] = "WHEN ? THEN ?";
+          $params[] = $id;
+          $params[] = $row[$column];
+        }
+      }
+    }
+
+    if (empty($cases)) {
+      throw new \InvalidArgumentException('Nenhuma coluna para atualizar.');
+    }
+
+    // Constroi as partes SQL do CASE
+    $caseSqlParts = [];
     foreach ($cases as $column => $caseStatements) {
-      $caseSql .= "$column = CASE ";
-      $caseSql .= implode(' ', $caseStatements);
-      $caseSql .= " ELSE $column END, ";
+      if (!empty($caseStatements)) {
+        $caseSqlParts[] = "`$column` = CASE `$indexColumn` " . 
+                           implode(' ', $caseStatements) . 
+                           " ELSE `$column` END";
+      }
     }
 
-    $caseSql = rtrim($caseSql, ', ');
-
-    $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+    $caseSql = implode(', ', $caseSqlParts);
+    $idPlaceholders = implode(', ', array_fill(0, count($ids), '?'));
     $params = array_merge($params, $ids);
 
-    $sql = "UPDATE {$this->table} SET $caseSql WHERE $indexColumn IN ($placeholders)";
+    $sql = "UPDATE `{$this->table}` SET $caseSql WHERE `$indexColumn` IN ($idPlaceholders)";
     
-
-    $this->_query($sql, $params, TRUE);
+    $this->_query($sql, $params, true);
   }
 
   public function insert($data) {
