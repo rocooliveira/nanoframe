@@ -15,6 +15,7 @@ if ( PHP_SAPI !== 'cli' ) exit('No web access allowed');
  * Além de "make" também estão disponíveis os parâmetros: 
  * - "latest": 	 Migra para a versão mais recente
  * - "last": 		 Retorna para versão anterior com base na atual definida no banco (tabela migrations)
+ * - "next": 		 Avança para próxima versão com base na atual definida no banco (tabela migrations)
  * - "rollback": Retorna para uma versão indicada
  * - "combine":  Consolida todos arquivos de de migrações em um único arquivo. Isso pode ser útil no casos onde já
  * 							 existem muitos arquivos no diretorio "migrations", eles acabam sendo acumulados ao longo do tempo
@@ -46,7 +47,9 @@ class Migrate extends Migration
       "\n\33[32mParâmetros Disponíveis\n===========================================================\33[0m \n" .
       "\33[32m     make:\33[0m Método de criação do arquivo de migração.\n".
       "\33[32m   latest:\33[0m Migra para a versão de migração mais recente.\n".
-      "\33[32m rollback:\33[0m Migra para versão estpulada.\n".
+      "\33[32m     last:\33[0m Migra para a versão anterior.\n".
+      "\33[32m     next:\33[0m Migra para a próxima versão.\n".
+      "\33[32m rollback:\33[0m Migra para versão estipulada.\n".
       "\33[32m  combine:\33[0m Cria um arquivo consolidado com todas as migrações disponíveis.\n".
       "\33[32m     info:\33[0m Uma tabela que mostra informações sobre o status de suas migrações.\n".
       "\33[32m     help:\x1b[0m Exibe a seção de ajuda.\n" .
@@ -295,6 +298,43 @@ class Migrate extends Migration
 			die;
 		}
 	}
+
+	public function next()
+	{
+		try {
+			
+			$files = $this->findMigrations(TRUE);
+
+			$currentVersion = $this->getVersion('version');
+
+			$latestVersion = array_key_last($files);
+
+    	foreach ($files as $version => $_) {
+
+    		if($version > $currentVersion){
+
+    			$this->runMigration( $files[$version], 'up' );
+    			$this->updateCurrentVersion($version);
+    			break;
+    		}
+
+    		if($version == $latestVersion){
+    			echo "\033[32m".'Nada para migrar por aqui. Você já possui versão mais recente! ' ."\033[0m" . PHP_EOL;
+    			exit;
+    		}
+
+    	
+    	}
+
+
+    	echo PHP_EOL . "\033[32m".'✅ Migrado para a próxima versão!' ."\033[0m" . PHP_EOL;
+
+		} catch (\Exception $e) {
+			echo "\nErro durante a transação: " . $e->getMessage();
+			die;
+		}
+	}
+
 
 	/**
 	 * Retorna até a versão estopulada
