@@ -96,6 +96,7 @@ class Entity extends Prompt
         $type = $this->mapColumnTypeToPHP($column['Type']);
         $nullable = $column['Null'] === 'YES';
         $autoIncrement = strpos($column['Extra'], 'auto_increment') !== false;
+        $default = $this->determineDefaultValue($column['Default'], $column['Extra']);
 
         $classContent .= "  public function get$field()";
         $classContent .= $nullable ? ": ?$type" : ": $type";
@@ -104,7 +105,7 @@ class Entity extends Prompt
         $classContent .= "  }\n\n";
 
         $classContent .= "  public function set$field(";
-        $classContent .= "\$value): void {\n";
+        $classContent .= "\$value = $default): void {\n";
 
         if (!$nullable && !$autoIncrement) {
           $classContent .= "    if (\$value === null) {\n";
@@ -142,6 +143,25 @@ class Entity extends Prompt
 			$this->printSuccess("Classe $className gerada com sucesso!");
 
 		}
+	}
+
+	public function determineDefaultValue($default, $extra)
+	{
+
+    if (is_null($default)) {
+      return 'NULL';
+    }
+
+    if (is_numeric($default)) {
+      return $default;
+    }
+
+    if (strpos($extra, 'on update') !== false || $default === 'CURRENT_TIMESTAMP') {
+      return 'NULL';
+    }
+
+    // Se for uma string (inclui valores como ''), adicionar aspas
+    return "'" . addslashes($default) . "'";
 	}
 
 	private function mapColumnTypeToPHP(string $columnType): string
