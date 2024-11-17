@@ -287,12 +287,53 @@ class DatabaseForge
 	}
 
 
-	public function addIndex($tableName, $indexName, $indexColumn)
-	{
-		if(! $this->isIndexExists( $tableName, $indexName ) ){
-			$this->executeQuery("ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$indexColumn}` ASC)");
-		}
-	}
+  /**
+   * Cria um indice para tabela
+   * @param string       $tableName   nome da tabela
+   * @param string|array $indexColumn nome da coluna ou array de colunas
+   * @param boolean      $isUnique se verdadeiro cria indice unico
+   * @param string       $indexName   nome do indice
+   */
+  public function addIndex($tableName, $indexColumn, $isUnique = FALSE, $indexName = '')
+  {
+
+    if( ! $indexName ){
+      $indexNameArray = is_array($indexColumn) ? $indexColumn : [$indexColumn];
+      $formattedIndexesName = implode('-', $indexNameArray);
+      $suffix = $isUnique ? 'UNIQUE' : 'idx';
+      $indexName = "{$tableName}-{$formattedIndexesName}_{$suffix}";
+    }
+
+    if(! $this->isIndexExists( $tableName, $indexName ) ){
+
+      $unique = $isUnique ? ' UNIQUE ' : ' ';
+
+      $indexColumnArray = is_array($indexColumn) ? $indexColumn : [$indexColumn];
+
+      $formattedIndexesArray = array_map(fn($i) => "`{$i}` ASC", $indexColumnArray);
+
+
+      $formattedIndexes = implode(',', $formattedIndexesArray);
+
+
+      $this->executeQuery("ALTER TABLE `{$tableName}` ADD{$unique}INDEX `{$indexName}` ({$formattedIndexes})");
+    }
+  }
+
+
+  public function dropIndex($tableName, $indexColumn, $isUnique = FALSE, $indexName = '')
+  {
+    if( ! $indexName ){
+      $indexNameArray = is_array($indexColumn) ? $indexColumn : [$indexColumn];
+      $formattedIndexesName = implode('-', $indexNameArray);
+      $suffix = $isUnique ? 'UNIQUE' : 'idx';
+      $indexName = "{$tableName}-{$formattedIndexesName}_{$suffix}";
+    }
+
+    if( $this->isIndexExists( $tableName, $indexName ) ){
+      $this->executeQuery("ALTER TABLE `{$tableName}` DROP INDEX `{$indexName}`");
+    }
+  }
 
 
 	private function constraintMinify($constraint)
