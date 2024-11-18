@@ -144,12 +144,16 @@ class DatabaseForge
     // Adiciona os atributos à consulta SQL
     foreach ($attributes as $columnName => $attribute) {
 
-    	$sql .= $this->getColumnWithAttributes($columnName, $attribute);
+      $sqlPart = $this->getColumnWithAttributes($columnName, $attribute);
 
       // Se o campo for único, adiciona a criação do índice
       if (isset($attribute['unique']) && $attribute['unique']) {
-        $sql .= ', UNIQUE INDEX ' . $columnName . '_unique (' . $columnName . ')';
+        $sqlPart = str_replace('UNIQUE ', '', $sqlPart);
+        $sqlPart .= ', UNIQUE INDEX ' . $columnName . '_UNIQUE (' . $columnName . ')';
       }
+
+      $sql .= $sqlPart;
+      
 
       // Se a coluna possui a chave primária, adiciona a criação do índice primário
       if (isset($attribute['primary_key']) && $attribute['primary_key']) {
