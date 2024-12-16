@@ -77,7 +77,7 @@ class Migrate extends Migration
 		$fileNameTmp = $fileName;
 
 		foreach($migrationsList as $key => $item){
-	    if (strpos($item, $fileName) !== FALSE){
+	    if (strpos($item, $fileName) !== false){
         $mFounded++;
         if($mFounded)
           $fileNameTmp=  "{$fileName}_v" . ($mFounded + 1);
@@ -111,9 +111,14 @@ class Migrate extends Migration
 		$fileFullName = $migrationVersion  .  '_'  .  $fileName  .  '.php';
 
 
+		echo PHP_EOL  . "Deseja criar a migration dentro de uma db transaction? " .  PHP_EOL;
+		echo "(Y/N) - ";
+
+		$withTransaction = strtoupper( trim(fgets(STDIN)) ) == 'Y';
+
 
 		// Obtem o conteúdo padrão do arquivo de migração
-		$fileContent = $this->getFileContent($fileName);
+		$fileContent = $this->getFileContent($fileName, $withTransaction);
 
 
 		if ( ! $this->writeMigrationFile($fileFullName, $fileContent))
@@ -230,7 +235,7 @@ class Migrate extends Migration
 
 		try {
 				
-			$files = $this->findMigrations(TRUE);
+			$files = $this->findMigrations(true);
 
 			$latestVersion = array_key_last($files);
 
@@ -269,7 +274,7 @@ class Migrate extends Migration
 	{
 		try {
 			
-			$files = $this->findMigrations(TRUE);
+			$files = $this->findMigrations(true);
 
 			$currentVersion = $this->getVersion('version');
 
@@ -303,7 +308,7 @@ class Migrate extends Migration
 	{
 		try {
 			
-			$files = $this->findMigrations(TRUE);
+			$files = $this->findMigrations(true);
 
 			$currentVersion = $this->getVersion('version');
 
@@ -341,7 +346,7 @@ class Migrate extends Migration
 	 * @param  string $entryText Texto de entrada da funcao
 	 * @return void
 	 */
-	public function rollback($entryText = NULL)
+	public function rollback($entryText = null)
 	{
 		echo $entryText ?? 'Entre com o numero da versão desejada (entrada parcial exibirá uma lista): ';
 
@@ -370,7 +375,7 @@ class Migrate extends Migration
 			return;
 		}
 
-		$content = NULL;
+		$content = null;
 
 		$headings = ['Versão	','Migration'];
 
@@ -468,12 +473,12 @@ class Migrate extends Migration
 		try{
 
 			$migrationsReverseList = array_reverse($files);
-			$retrieve = FALSE;
+			$retrieve = false;
 
 			$startVersion = $currentVersion;
 			$endVersion = $foundVersion['key'];
 
-			$version = NULL;
+			$version = null;
 
 			foreach ($migrationsReverseList as $file) {
 			
@@ -484,7 +489,7 @@ class Migrate extends Migration
 					break;
 				}
 
-				if($version == $startVersion) $retrieve = TRUE;
+				if($version == $startVersion) $retrieve = true;
 
 				if( ! $retrieve ) continue;
 
@@ -518,7 +523,7 @@ class Migrate extends Migration
 	public function combine()
 	{
 
-		if( $this->isUpdatedDb() == FALSE ){
+		if( $this->isUpdatedDb() == false ){
 
 			$msg = 'Seu banco de dados foi migrado para última versão disponível.' . PHP_EOL;
 			$msg .= 'Para criar um aquivo consolidado primeiramente atualize para versão mais recente.' . PHP_EOL;
@@ -536,7 +541,7 @@ class Migrate extends Migration
 
 		$consolidatedFilepath = $this->migrationPath . $timestamp . '_consolidated_migration'.$suffix.'.php';
 
-		$migrationFiles = $this->findMigrations(TRUE, TRUE);
+		$migrationFiles = $this->findMigrations(true, true);
 
 		if(  count($migrationFiles) < 2 ){
 			$msg = 'Nenhum conjunto de arquivos disponível para criar o arquivo consolidado.';
@@ -565,7 +570,7 @@ class Migrate extends Migration
 			$upMethod .= '		$'."this->up_$version();" . PHP_EOL;
 		}
 
-		$migrationFilesReverse = array_reverse( $migrationFiles, TRUE );
+		$migrationFilesReverse = array_reverse( $migrationFiles, true );
 
 		foreach ($migrationFilesReverse as $file) {
 			$version = $this->getMigrationNumber(basename($file, '.php'));
@@ -672,7 +677,7 @@ class Migrate extends Migration
 		foreach ($migrationFiles as $file) {
 			$ret = unlink($file);
 
-			if( $ret === FALSE ){
+			if( $ret === false ){
 				echo PHP_EOL  . "\033[31m"."❌ Erro ao excluir arquivos de migrations anteriores". "\033[0m" .  PHP_EOL;
 				echo "\033[33m". 'Verifique o diretório e faça as exclusões manualmente' . "\033[0m" .  PHP_EOL;
 				die;
@@ -746,7 +751,7 @@ class Migrate extends Migration
 	 * @param string $fileName Nome do arquivo de migração
 	 * @return string 
 	 */
-	private function getFileContent($fileName = '')
+	private function getFileContent($fileName = '', $useTransaction = false)
 	{
 
 		$fileContent = '<?php'  .  PHP_EOL  .  PHP_EOL;	// <?php
@@ -768,43 +773,52 @@ class Migrate extends Migration
 		// Conteudo da funcao up
 		$fileContent .= '	public function up()'  .  PHP_EOL;
 		$fileContent .= '	{'  .  PHP_EOL  .  PHP_EOL;
-		$fileContent .= '		$this->beginTransaction();'  .  PHP_EOL  .  PHP_EOL;
-		$fileContent .= '		try {'  .  PHP_EOL;
 
-		if (strpos($this->migrationFileName, 'modify') !== FALSE)
+		if( $useTransaction ){
+			$fileContent .= '		$this->beginTransaction();'  .  PHP_EOL  .  PHP_EOL;
+			$fileContent .= '		try {'  .  PHP_EOL . PHP_EOL;
+		}
+
+		$transIndent = $useTransaction ? '			' : '		';
+
+		if (strpos($this->migrationFileName, 'modify') !== false)
 		{
-			$fileContent .= '			$this->addColumn($'.'this->tableName, $'.'this->fields());'  .  PHP_EOL;
+			$fileContent .= $transIndent . '$this->addColumn($'.'this->tableName, $'.'this->fields());'  .  PHP_EOL;
 		}
 		else
 		{
-			$fileContent .= "			\$fields = [ 
-			    'id' => [
-			    	'primary_key'    => TRUE,
-				    'type'           => 'INT',
-				    'constraint'     => 10,
-				    'unsigned'       => TRUE,
-				    'auto_increment' => TRUE
-			    ],
-			    'created_at' => [
-				    'type'        => 'TIMESTAMP',
-				    'default'     => 'CURRENT_TIMESTAMP()',
-				    'null'				=> TRUE
-			    ],
-			    'updated_at' => [
-				    'type'        => 'TIMESTAMP',
-				    'default'     => 'NULL ON UPDATE CURRENT_TIMESTAMP()',
-				    'null'				=> TRUE
-			    ]
-			];"  .  PHP_EOL .  PHP_EOL;
+			$fileContent .= "{$transIndent}\$fields = [" . PHP_EOL;
+			$fileContent .= "	{$transIndent}'id' => [" . PHP_EOL;
+	    $fileContent .= "		{$transIndent}'primary_key'    => true," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'type'           => 'INT'," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'constraint'     => 10," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'unsigned'       => true," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'auto_increment' => true" . PHP_EOL;
+	    $fileContent .= "	{$transIndent}]," . PHP_EOL;
+	    $fileContent .= "	{$transIndent}'created_at' => [" . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'type'        => 'TIMESTAMP'," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'default'     => 'CURRENT_TIMESTAMP()'," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'null'				=> true" . PHP_EOL;
+	    $fileContent .= "	{$transIndent}]," . PHP_EOL;
+	    $fileContent .= "	{$transIndent}'updated_at' => [" . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'type'        => 'TIMESTAMP'," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'default'     => 'NULL ON UPDATE CURRENT_TIMESTAMP()'," . PHP_EOL;
+		  $fileContent .= "		{$transIndent}'null'				=> true" . PHP_EOL;
+	    $fileContent .= "	{$transIndent}]" . PHP_EOL;
+			$fileContent .= "{$transIndent}];" . PHP_EOL; 
+			$fileContent .= PHP_EOL . PHP_EOL;
 
-			$fileContent .= '			$this->createTable($'.'this->tableName, $fields);'  .  PHP_EOL  .  PHP_EOL;
+			$fileContent .= "{$transIndent}\$this->createTable(\$this->tableName, \$fields);"  .  PHP_EOL  .  PHP_EOL;
 		}
 		
-		$fileContent .= '			$this->commit();'  .  PHP_EOL  .  PHP_EOL;
+		if( $useTransaction ){
+			$fileContent .= '			$this->commit();'  .  PHP_EOL  .  PHP_EOL;
 
-		$fileContent .= '		} catch (\Exception $e) {'  .  PHP_EOL;
-		$fileContent .= '			$this->rollBack($e);'  .  PHP_EOL;
-		$fileContent .= '		}'  .  PHP_EOL;
+			$fileContent .= '		} catch (\Exception $e) {'  .  PHP_EOL;
+			$fileContent .= '			$this->rollBack($e);'  .  PHP_EOL;
+			$fileContent .= '		}'  .  PHP_EOL;
+
+		}
 
 		$fileContent .= '	}'  .  PHP_EOL;
 
@@ -813,9 +827,12 @@ class Migrate extends Migration
 		// Conteudo da funcao down
 		$fileContent .= '	public function down()'  .  PHP_EOL;
 		$fileContent .= '	{'  .  PHP_EOL;
-		$fileContent .= '		try {'  .  PHP_EOL .  PHP_EOL;
 
-		if (strpos($this->migrationFileName, 'modify') !== FALSE)
+		if( $useTransaction ){
+			$fileContent .= '		try {'  .  PHP_EOL .  PHP_EOL;
+		}
+
+		if (strpos($this->migrationFileName, 'modify') !== false)
 		{
 			$fileContent .= '		if (is_array($'.'this->fields()))'  .  PHP_EOL;
 			$fileContent .= '		{'  .  PHP_EOL;
@@ -827,17 +844,22 @@ class Migrate extends Migration
 		}
 		else
 		{
-			$fileContent .= '			$this->dropTable($'.'this->tableName, TRUE);'  .  PHP_EOL .  PHP_EOL;
+			$fileContent .=  $useTransaction ? '			' : '		';
+
+			$fileContent .= '$this->dropTable($'.'this->tableName, true);'  .  PHP_EOL .  PHP_EOL;
 		}
 
-		$fileContent .= '		} catch (\Exception $e) {'  .  PHP_EOL;
-		$fileContent .= '			$this->rollBack($e);'  .  PHP_EOL;
-		$fileContent .= '		}'  .  PHP_EOL;
+		if( $useTransaction ){
+			$fileContent .= '			$this->commit();'  .  PHP_EOL  .  PHP_EOL;
 
+			$fileContent .= '		} catch (\Exception $e) {'  .  PHP_EOL;
+			$fileContent .= '			$this->rollBack($e);'  .  PHP_EOL;
+			$fileContent .= '		}'  .  PHP_EOL;
+		}
 		$fileContent .= '	}'  .  PHP_EOL;
 
 
-		if (strpos($this->migrationFileName, 'modify') !== FALSE)
+		if (strpos($this->migrationFileName, 'modify') !== false)
 		{	
 			$fileContent .= PHP_EOL;
 			$fileContent .= '	/**'  .  PHP_EOL;
