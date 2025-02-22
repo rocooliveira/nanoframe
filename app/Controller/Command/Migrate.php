@@ -278,8 +278,12 @@ class Migrate extends Migration
 
 			$currentVersion = $this->getVersion('version');
 
-
-			$this->runMigration( $files[$currentVersion], 'down' );
+			if( isset($files[$currentVersion]) ){
+				$this->runMigration( $files[$currentVersion], 'down' );
+			}else{
+				echo PHP_EOL . "\033[33m".'🟡 Não há mais nenhuma migration anterior para retroceder' ."\033[0m" . PHP_EOL;
+				return;
+			}
 
     	$lastVersion = 0;
 
@@ -294,9 +298,8 @@ class Migrate extends Migration
     	}
 
     	$this->updateCurrentVersion($lastVersion);
-
-
-    	echo PHP_EOL . "\033[32m".'✅ Migrado para a versão anterior!' ."\033[0m" . PHP_EOL;
+			
+			echo PHP_EOL . "\033[32m".'✅ Migrado para a versão anterior!' ."\033[0m" . PHP_EOL;
 
 		} catch (\Exception $e) {
 			echo "\nErro durante a transação: " . $e->getMessage();
