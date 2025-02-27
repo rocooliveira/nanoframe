@@ -435,6 +435,15 @@ class QueryBuilder {
         return;
     }
 
+    if(is_object($data[0])){
+      foreach ($data as $key => $row) {
+        if(is_object($row)){
+          $data[$key] = get_object_vars($row);
+        }
+      }
+    }
+
+
     $columns = implode(', ', array_keys($data[0]));
     $placeholders = '(' . implode(', ', array_fill(0, count($data[0]), '?')) . ')';
     $values = [];
