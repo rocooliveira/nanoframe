@@ -362,6 +362,14 @@ class QueryBuilder {
     $params = [];
     $columns = [];
 
+    if(is_object($data[0])){
+      foreach ($data as $key => $row) {
+        if(is_object($row)){
+          $data[$key] = get_object_vars($row);
+        }
+      }
+    }
+
     // identifica todas as colunas existentes
     foreach ($data as $row) {
       if (!isset($row[$indexColumn])) {
@@ -474,6 +482,14 @@ class QueryBuilder {
 
   public function replaceBatch($data)
   {
+
+    if(is_object($data[0])){
+      foreach ($data as $key => $row) {
+        if(is_object($row)){
+          $data[$key] = get_object_vars($row);
+        }
+      }
+    }
 
     $fields = implode(', ', array_keys($data[0]));
     $placeholders = rtrim(str_repeat('?, ', count($data[0])), ', ');
