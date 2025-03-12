@@ -49,8 +49,8 @@ Você pode definir subnamespaces dentro de suas rotas usando colchetes. Por exem
 // Routes.php
 
 return [
-    'admin[GET]' => 'admin\[Admin\AdminController]',
-    'admin/dashboard[GET]' => 'admin\[Admin/DashboardController]',
+    'admin[GET]' => 'admin/[Admin/AdminController]',
+    'admin/dashboard[GET]' => 'admin/[Admin/DashboardController]',
 ];
 ```
 Neste exemplo, a rota `admin` especifica o `AdminController`, e a rota `admin/dashboard` especifica o `DashboardController` ambos dentro do namespace `Admin`.
@@ -63,7 +63,7 @@ Você pode usar alguns curingas que são aliases para expressões regulares que 
 ```php
 // Routes.php
 return [
-    'admin/dashboard/produtos/(:any)' => 'admin\ProductController',
+    'admin/dashboard/produtos/(:any)' => 'admin/ProductController',
 ];
 ```
 A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos/" qualquer segmento de url alfanumérico
@@ -72,7 +72,7 @@ A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos/
 ```php
 // Routes.php
 return [
-    'admin/dashboard/produto/(:num)' => 'admin\ProductController',
+    'admin/dashboard/produto/(:num)' => 'admin/ProductController',
 ];
 ```
 A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos" qualquer segmento de url numérico
@@ -83,7 +83,7 @@ A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos"
 ```php
 // Routes.php
 return [
-    '/admin/\b(painel|dashboard)\b)' => 'admin\DashboardController',
+    '/admin/\b(painel|dashboard)\b)' => 'admin/DashboardController',
 ];
 ```
 No exemplo acima o objetivo é que a rota seja válida se ela começar com "admin/" e o próximo segmento seja "painel" ou "dashboard",
