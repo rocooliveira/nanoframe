@@ -72,11 +72,25 @@ class Router
 
   public static function buildRegex($routePattern)
   {
-    $regex = preg_replace('/\//', '\/', $routePattern);
+    // Processa grupos opcionais primeiro
+    $regex = preg_replace_callback(
+      '/\((.*?)\)\?/', 
+      function ($matches) {
+        // Substituir :num e :any DENTRO do grupo opcional (sem parênteses)
+        $inner = preg_replace('/:num/', '(\d+)', $matches[1]);
+        $inner = preg_replace('/:any/', '(.+)', $inner);
+        return '(?:' . $inner . ')?'; // Grupo não-capturante opcional
+      }, 
+      $routePattern
+    );
+
+    // Substitui placeholders FORA de grupos opcionais (ex: (:num))
     $regex = preg_replace('/\(:num\)/', '(\d+)', $regex);
     $regex = preg_replace('/\(:any\)/', '(.+)', $regex);
-    $regex = preg_replace('/\\b\((.+?)\)\\b/', '\b($1)\b', $regex);
-    $regex = '/^' . $regex . '\/?$/';
+
+    // Escapa barras e ajustar a regex final
+    $regex = preg_replace('/\//', '\/', $regex);
+    $regex = '/^' . $regex . '\/?$/'; // Permite "/" opcional no final
 
     return $regex;
   }
