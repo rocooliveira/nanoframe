@@ -78,6 +78,20 @@ return [
 A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos" qualquer segmento de url numérico
 
 
+##### Segmentos opcionais: 
+(/:num)?
+(/:any)?
+(/\b(str1|str2)\b)?
+
+```php
+// Routes.php
+return [
+    'admin/dashboard/produto(/:num)?' => 'admin/ProductController',
+];
+```
+A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos" qualquer segmento de url numérico, mas ele é opcional se for passado apenas "admin/dashboard/produtos" o controller também será chamado.
+
+
 ##### Fronteia enter palavras: \b(str1|str2)\b
 
 ```php

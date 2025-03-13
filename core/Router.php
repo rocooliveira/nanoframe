@@ -76,21 +76,23 @@ class Router
     $regex = preg_replace_callback(
       '/\((.*?)\)\?/', 
       function ($matches) {
-        // Substituir :num e :any DENTRO do grupo opcional (sem parênteses)
+        // Substitui placeholders DENTRO do grupo opcional
         $inner = preg_replace('/:num/', '(\d+)', $matches[1]);
         $inner = preg_replace('/:any/', '(.+)', $inner);
-        return '(?:' . $inner . ')?'; // Grupo não-capturante opcional
+        // Preserva padrões como \b (ex: \b(edit|delete)\b)
+        $inner = str_replace(['\b', '\B'], ['\\b', '\\B'], $inner);
+        return '(?:' . $inner . ')?';
       }, 
       $routePattern
     );
 
-    // Substitui placeholders FORA de grupos opcionais (ex: (:num))
+    // Substitui placeholders FORA de grupos opcionais
     $regex = preg_replace('/\(:num\)/', '(\d+)', $regex);
     $regex = preg_replace('/\(:any\)/', '(.+)', $regex);
 
     // Escapa barras e ajustar a regex final
     $regex = preg_replace('/\//', '\/', $regex);
-    $regex = '/^' . $regex . '\/?$/'; // Permite "/" opcional no final
+    $regex = '/^' . $regex . '\/?$/';
 
     return $regex;
   }
