@@ -11,14 +11,16 @@ class DatabaseForge
   private $password;
   private $pdo;
 
+  private $primaryKeys = [];
+
   public function __construct() {
 
     try {
 
-	    $this->host     = $_ENV['DB_HOST'];
-	    $this->dbname   = $_ENV['DB_NAME'];
-	    $this->username = $_ENV['DB_USER'];
-	    $this->password = $_ENV['DB_PASSWORD'];
+      $this->host     = $_ENV['DB_HOST'];
+      $this->dbname   = $_ENV['DB_NAME'];
+      $this->username = $_ENV['DB_USER'];
+      $this->password = $_ENV['DB_PASSWORD'];
 
       $this->pdo = new PDO("mysql:host=$this->host;dbname=$this->dbname", $this->username, $this->password);
       $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -56,8 +58,8 @@ class DatabaseForge
     $this->pdo->rollBack();
 
     if($e){
-    	echo PHP_EOL . "\033[31m". "Erro durante a transação: \n - " . $e->getMessage() ."\033[0m" . PHP_EOL . PHP_EOL;
-    	exit;
+      echo PHP_EOL . "\033[31m". "Erro durante a transação: \n - " . $e->getMessage() ."\033[0m" . PHP_EOL . PHP_EOL;
+      exit;
     }
 
   }
@@ -78,7 +80,7 @@ class DatabaseForge
     $newName = $attribute['new_name'] ?? NULL;
 
     if( $newName ){
-    	$field[] = $newName;
+      $field[] = $newName;
     }
 
     $field[] = $attribute['type'];
@@ -133,7 +135,7 @@ class DatabaseForge
 
 
 
-	public function createTable($tableName, $attributes = [], $ifNotExists = FALSE ) {
+  public function createTable($tableName, $attributes = [], $ifNotExists = FALSE ) {
    
     // Verifica se a tabela deve ser criada apenas se não existir
     $ifNOTExistsClause = $ifNotExists ? 'IF NOT EXISTS' : '';
@@ -157,13 +159,20 @@ class DatabaseForge
 
       // Se a coluna possui a chave primária, adiciona a criação do índice primário
       if (isset($attribute['primary_key']) && $attribute['primary_key']) {
-        $sql .= ', PRIMARY KEY (' . $columnName . ')';
+        $this->primaryKeys[] = $columnName;
       }
 
       $sql .= ', ' . PHP_EOL;
 
     }
 
+
+    if( !empty($this->primaryKeys) ){
+      $primaryKeys = implode(', ', $this->primaryKeys);
+      $sql .= "PRIMARY KEY (" . $primaryKeys . ")";
+
+      $this->primaryKeys = [];
+    }
 
     // Remove a vírgula extra no final da lista de atributos
     $sql = rtrim($sql, ", \n") . PHP_EOL;
@@ -176,11 +185,11 @@ class DatabaseForge
     $this->executeQuery($sql);
 
 
-	}
+  }
 
   public function dropTable($tableName, $ifExists = FALSE) {
 
-  	$ifExistsClause = $ifExists ? 'IF EXISTS ' : NULL;
+    $ifExistsClause = $ifExists ? 'IF EXISTS ' : NULL;
     $sql = "DROP TABLE {$ifExistsClause}{$tableName};";
 
     try {
@@ -219,9 +228,9 @@ class DatabaseForge
     foreach ($columnAttributes as $columnName => $attribute) {
       if (!$this->isColumnExists($tableName, $columnName)) {
 
-      	$sql = "ALTER TABLE $tableName ADD COLUMN ";
+        $sql = "ALTER TABLE $tableName ADD COLUMN ";
 
-    		$sql .= $this->getColumnWithAttributes($columnName, $attribute);
+        $sql .= $this->getColumnWithAttributes($columnName, $attribute);
 
         $this->executeQuery($sql);
 
@@ -249,7 +258,7 @@ class DatabaseForge
         
         $newName = isset($modifications['new_name']) ? $modifications['new_name'] : $columnName;
         
-				$field = $this->getColumnWithAttributes($columnName, $modifications);
+        $field = $this->getColumnWithAttributes($columnName, $modifications);
 
         // Se o novo nome for diferente do nome atual, renomeia a coluna
         if ($columnName !== $newName) {
@@ -269,8 +278,8 @@ class DatabaseForge
   }
 
 
-	private function isForeignKeyExists($tableName, $constraintName)
-	{
+  private function isForeignKeyExists($tableName, $constraintName)
+  {
     
     $result = $this->pdo->query("
         SELECT *
@@ -281,14 +290,14 @@ class DatabaseForge
     ");
 
     return $result->rowCount() > 0;
-	}
+  }
 
-	public function isIndexExists($tableName, $index)
-	{
-		$result = $this->pdo->query("SHOW INDEX FROM {$tableName} where Key_name = '{$index}'");
+  public function isIndexExists($tableName, $index)
+  {
+    $result = $this->pdo->query("SHOW INDEX FROM {$tableName} where Key_name = '{$index}'");
 
-		return $result->rowCount() > 0;
-	}
+    return $result->rowCount() > 0;
+  }
 
 
   /**
@@ -340,47 +349,47 @@ class DatabaseForge
   }
 
 
-	private function constraintMinify($constraint)
-	{
+  private function constraintMinify($constraint)
+  {
 
-	    $constraint = ltrim($constraint, 'fk_');
-	    $constraintArr = explode('-',$constraint);
-	    
-	    $tbl1Arr = explode('_', $constraintArr[0]);
-	    $tbl2Arr = explode('_', $constraintArr[2]);
-	    
-	    $tbl1Min = implode('_', array_map(function($item){
-	        return substr($item, 0, 3);
-	    }, $tbl1Arr));
-	    
-	    $tbl2Min = implode('_', array_map(function($item){
-	        return substr($item, 0, 3);
-	    }, $tbl2Arr));
+      $constraint = ltrim($constraint, 'fk_');
+      $constraintArr = explode('-',$constraint);
+      
+      $tbl1Arr = explode('_', $constraintArr[0]);
+      $tbl2Arr = explode('_', $constraintArr[2]);
+      
+      $tbl1Min = implode('_', array_map(function($item){
+          return substr($item, 0, 3);
+      }, $tbl1Arr));
+      
+      $tbl2Min = implode('_', array_map(function($item){
+          return substr($item, 0, 3);
+      }, $tbl2Arr));
 
-	    $constraint = "fk_{$tbl1Min}-$constraintArr[1]-{$tbl2Min}";
+      $constraint = "fk_{$tbl1Min}-$constraintArr[1]-{$tbl2Min}";
 
-	    if( strlen($constraint) > 59 ){
+      if( strlen($constraint) > 59 ){
 
-	      throw new \Exception("O identificador da foreing key é longo demais", 1);
-	      
-	    }
+        throw new \Exception("O identificador da foreing key é longo demais", 1);
+        
+      }
 
-	    return $constraint;
+      return $constraint;
 
-	}
+  }
 
-	public function addForeignKey(
-		$table,
-		$foreign_key,
-		$references,
-		$refField,
-		$onUpdate = 'NO ACTION',
-		$onDelete = 'NO ACTION' 
-	){
+  public function addForeignKey(
+    $table,
+    $foreign_key,
+    $references,
+    $refField,
+    $onUpdate = 'NO ACTION',
+    $onDelete = 'NO ACTION' 
+  ){
 
 
-		// FOREIGN KEY
-		// ------------------------------------------------------------------------
+    // FOREIGN KEY
+    // ------------------------------------------------------------------------
       $constraint = "fk_{$table}-{$foreign_key}-{$references}";
 
       if( strlen($constraint) > 59 ){
@@ -389,32 +398,32 @@ class DatabaseForge
 
 
       if( ! $this->isForeignKeyExists( $table, $constraint ) ){
-	      $this->executeQuery("
-	      	ALTER TABLE `{$table}` 
-	      		ADD CONSTRAINT `{$constraint}` 
-	      		FOREIGN KEY (`{$foreign_key}`) REFERENCES `{$references}`(`{$refField}`) 
-	      		ON DELETE {$onDelete} 
-	      		ON UPDATE {$onUpdate}
-	      ");
-	    }
+        $this->executeQuery("
+          ALTER TABLE `{$table}` 
+            ADD CONSTRAINT `{$constraint}` 
+            FOREIGN KEY (`{$foreign_key}`) REFERENCES `{$references}`(`{$refField}`) 
+            ON DELETE {$onDelete} 
+            ON UPDATE {$onUpdate}
+        ");
+      }
 
       // INDEX
       // ------------------------------------------------------------------------
 
-	    if( ! $this->isIndexExists($table, $constraint) ){
+      if( ! $this->isIndexExists($table, $constraint) ){
 
-	      $index =  "{$constraint}_idx";
+        $index =  "{$constraint}_idx";
 
-	      $this->executeQuery("ALTER TABLE `{$table}` ADD INDEX `{$index}` (`{$foreign_key}` ASC)");
-	    }
-	}
+        $this->executeQuery("ALTER TABLE `{$table}` ADD INDEX `{$index}` (`{$foreign_key}` ASC)");
+      }
+  }
 
 
   public function dropForeignKey($table, $foreign_key, $references)
   {
 
-		// FOREIGN KEY
-		// ------------------------------------------------------------------------
+    // FOREIGN KEY
+    // ------------------------------------------------------------------------
 
     $constraint = "fk_{$table}-{$foreign_key}-{$references}";
 
