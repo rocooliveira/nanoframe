@@ -152,7 +152,7 @@ class Router
   }
 
 
-  private static function getUriPart($string)
+  protected static function getUriPart($string)
   {
     // Encontrar todas as partes dentro dos colchetes
     preg_match_all("/\[([^\]]*)\]/", $string, $matches);
