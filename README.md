@@ -92,12 +92,12 @@ return [
 A rota acima aceita no próximo segmento de url após "admin/dashboard/produtos" qualquer segmento de url numérico, mas ele é opcional se for passado apenas "admin/dashboard/produtos" o controller também será chamado.
 
 
-##### Fronteia enter palavras: \b(str1|str2)\b
+##### Fronteira enter possíveis segmentos de url pré-determinados: \b(str1|str2)\b
 
 ```php
 // Routes.php
 return [
-    '/admin/\b(painel|dashboard)\b)' => 'admin/DashboardController',
+    '/admin/\b(painel|dashboard)\b' => 'admin/DashboardController',
 ];
 ```
 No exemplo acima o objetivo é que a rota seja válida se ela começar com "admin/" e o próximo segmento seja "painel" ou "dashboard",
