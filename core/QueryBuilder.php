@@ -2,6 +2,7 @@
 
 namespace Nanoframe\Core;
 
+use Exception;
 use \PDO;
 
 class QueryBuilder {
@@ -29,6 +30,10 @@ class QueryBuilder {
   private $params = [];
 
   private $clausesAndParams = [];
+
+  private $groupStart = false;
+  private $groupEnd = false;
+  private $pendingGroupEnd = false;
 
 
   private $lastQuery = '';
@@ -103,6 +108,11 @@ class QueryBuilder {
 
   private function _where($logicalOperator, $field, $value = null, $escape = TRUE ) {
 
+
+    $gStart = $this->_groupStart();
+    $gEnd = $this->_groupEnd();
+
+
     if (is_array($field)) {
 
       $i = 0;
@@ -120,10 +130,14 @@ class QueryBuilder {
         
 
         if($escape){
-          $this->conditions[] = "$startCond $column $operator ?";
+          $conditionsStr = implode(' ', array_filter([$gEnd, $startCond, $gStart, $column, $operator]));
+
+          $this->conditions[] = "$conditionsStr ?";
           $value[] = $val;
         }else{
-          $this->conditions[] = "$startCond $column $operator $val";
+          $conditionsStr = implode(' ', array_filter([$gEnd, $startCond, $gStart, $column, $operator, $val]));
+
+          $this->conditions[] = $conditionsStr;
         }
 
 
@@ -143,7 +157,8 @@ class QueryBuilder {
 
       $binding = $escape ? '?' : $value;
 
-      $this->conditions[]  = "$startCond $column $operator $binding";
+      $conditionsStr = implode(' ', array_filter([$gEnd, $startCond, $gStart, $column, $operator, $binding]));
+      $this->conditions[]  = $conditionsStr;
 
     }
 
@@ -176,11 +191,16 @@ class QueryBuilder {
 
   private function _whereIn($logicalOperator, $indexColumn, $params = []) {
 
+    $gStart = $this->_groupStart();
+    $gEnd = $this->_groupEnd();
+
     $placeholders = implode(', ', array_fill(0, count($params), '?'));
 
+    $conditionsStr = implode(' ', array_filter([$gEnd, $logicalOperator, $gStart, $indexColumn]));
+
     $this->conditions[] = $this->conditions
-     ? "{$logicalOperator} {$indexColumn} IN (" .$placeholders . ")"
-     : "WHERE {$indexColumn} IN (" .$placeholders . ")";
+     ? "$conditionsStr IN (" .$placeholders . ")"
+     : "WHERE {$gStart}{$indexColumn} IN (" .$placeholders . ")";
 
     $this->params = array_merge($this->params, $params);
 
@@ -202,12 +222,18 @@ class QueryBuilder {
 
   private function _like($logicalOperator, $column, $value)
   {
+    $gStart = $this->_groupStart();
+    $gEnd = $this->_groupEnd();
 
     if( $this->conditions ){
-      $this->conditions[] = "$logicalOperator $column LIKE ?";
+      $conditionsStr = implode(' ', array_filter([$gEnd, $logicalOperator, $gStart, $column]));
+
+      $this->conditions[] = "$conditionsStr LIKE ?";
       $this->params = array_merge($this->params, ["%$value%"]);
     }else{
-      $this->conditions[] = "WHERE $column LIKE ?";
+      $conditionsStr = implode(' ', array_filter([$gStart, $column]));
+
+      $this->conditions[] = "WHERE $conditionsStr LIKE ?";
       $this->params = ["%$value%"];
     }
 
@@ -229,6 +255,41 @@ class QueryBuilder {
     return $this;
   }
 
+  public function groupStart()
+  {
+    $this->groupStart =  true;
+  }
+
+  public function groupEnd()
+  {
+    $this->groupEnd =  true;
+  }
+
+  public function _groupStart()
+  {
+    $gStart = '';
+
+    if( $this->groupStart ){
+      $gStart = ' ( ';
+      $this->groupStart = false;
+      $this->pendingGroupEnd = true;
+    }
+
+    return $gStart;
+  }
+
+  public function _groupEnd()
+  {
+    $gEnd = '';
+
+    if( $this->groupEnd ){
+      $gEnd = ' ) ';
+      $this->groupEnd = false;
+      $this->pendingGroupEnd = false;
+    }
+
+    return $gEnd;
+  }
 
   public function join($table, $condition, $type = 'INNER')
   {
@@ -276,12 +337,21 @@ class QueryBuilder {
 
     $properties = array_merge($properties, $this->conditions);
 
+    if( $this->groupEnd ){
+      $properties = array_merge($properties, [ $this->_groupEnd() ]);
+    }
+
+    if( $this->pendingGroupEnd ){
+      throw new Exception('Nenhum "GroupEnd" identificado para o "GroupStart" iniciado.');
+    }
+
     $properties = array_merge($properties, [
       $this->groupBy,
       $this->having,
       $this->orderBy,
       $this->limit,
     ]);
+
 
 
 
@@ -346,7 +416,11 @@ class QueryBuilder {
 
     $conditions = implode(' ', $this->conditions);
 
-    $sql = "UPDATE {$this->table} SET {$set} {$conditions}";
+    $joins = implode(' ', array_filter($this->join)) ;
+
+    $updateParamsStr = implode(' ', array_filter([ $joins, 'SET', $set, $conditions ]));
+
+    $sql = "UPDATE {$this->table} {$updateParamsStr}";
 
     $this->_query($sql, array_merge($params, $this->params), TRUE );
   }
@@ -369,7 +443,7 @@ class QueryBuilder {
         }
       }
     }
-
+    
     // identifica todas as colunas existentes
     foreach ($data as $row) {
       if (!isset($row[$indexColumn])) {
@@ -440,7 +514,7 @@ class QueryBuilder {
   public function insertBatch($data) {
 
     if (empty($data)) {
-        return;
+      return;
     }
 
     if(is_object($data[0])){
