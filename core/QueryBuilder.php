@@ -189,7 +189,7 @@ class QueryBuilder {
     return $this;
   }
 
-  private function _whereIn($logicalOperator, $indexColumn, $params = []) {
+  private function _whereIn($logicalOperator, $indexColumn, $params = [], $not = false) {
 
     $gStart = $this->_groupStart();
     $gEnd = $this->_groupEnd();
@@ -198,9 +198,11 @@ class QueryBuilder {
 
     $conditionsStr = implode(' ', array_filter([$gEnd, $logicalOperator, $gStart, $indexColumn]));
 
+    $not = ($not) ? ' NOT' : '';
+
     $this->conditions[] = $this->conditions
-     ? "$conditionsStr IN (" .$placeholders . ")"
-     : "WHERE {$gStart}{$indexColumn} IN (" .$placeholders . ")";
+     ? "{$conditionsStr}{$not} IN (" .$placeholders . ")"
+     : "WHERE {$gStart}{$indexColumn}{$not} IN (" .$placeholders . ")";
 
     $this->params = array_merge($this->params, $params);
 
@@ -213,27 +215,41 @@ class QueryBuilder {
     return $this;
   }
 
+  public function whereNotIn($indexColumn, $params = []) {
+
+    $this->_whereIn('AND', $indexColumn, $params, true);
+    return $this;
+  }
+
   public function orWhereIn($indexColumn, $params = []) {
 
     $this->_whereIn('OR', $indexColumn, $params);
     return $this;
   }
 
+  public function orWhereNotIn($indexColumn, $params = []) {
 
-  private function _like($logicalOperator, $column, $value)
+    $this->_whereIn('OR', $indexColumn, $params, true);
+    return $this;
+  }
+
+
+  private function _like($logicalOperator, $column, $value, $not = false)
   {
     $gStart = $this->_groupStart();
     $gEnd = $this->_groupEnd();
 
+    $not = ($not) ? ' NOT' : '';
+
     if( $this->conditions ){
       $conditionsStr = implode(' ', array_filter([$gEnd, $logicalOperator, $gStart, $column]));
 
-      $this->conditions[] = "$conditionsStr LIKE ?";
+      $this->conditions[] = "{$conditionsStr}{$not} LIKE ?";
       $this->params = array_merge($this->params, ["%$value%"]);
     }else{
       $conditionsStr = implode(' ', array_filter([$gStart, $column]));
 
-      $this->conditions[] = "WHERE $conditionsStr LIKE ?";
+      $this->conditions[] = "WHERE {$conditionsStr}{$not} LIKE ?";
       $this->params = ["%$value%"];
     }
 
@@ -248,9 +264,24 @@ class QueryBuilder {
     return $this;
   }
 
+  public function notLike($column, $value)
+  {
+
+    $this->_like('AND', $column, $value, true);
+
+    return $this;
+  }
+
   public function orLike($column, $value)
   {
     $this->_like('OR', $column, $value);
+
+    return $this;
+  }
+
+  public function orNotLike($column, $value)
+  {
+    $this->_like('OR', $column, $value, true);
 
     return $this;
   }
