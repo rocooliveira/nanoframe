@@ -317,6 +317,11 @@ class DatabaseForge
       $indexName = "{$tableName}-{$formattedIndexesName}_{$suffix}";
     }
 
+    // Verifica e minifica se necessário
+    if (strlen($indexName) > 59) {
+      $indexName = $this->indexMinify($indexName);
+    }
+
     if(! $this->isIndexExists( $tableName, $indexName ) ){
 
       $unique = $isUnique ? ' UNIQUE ' : ' ';
@@ -348,6 +353,41 @@ class DatabaseForge
     }
   }
 
+  private function indexMinify(string $indexName): string
+  {
+    // Extrai sufixo: procura "_UNIQUE" ou "_idx" no final
+    if (preg_match('/_(UNIQUE|idx)$/', $indexName, $matches)) {
+      $suffix = '_' . $matches[1];
+      $base = substr($indexName, 0, -strlen($suffix));
+    } else {
+      // fallback se não encontrar sufixo
+      $suffix = '';
+      $base = $indexName;
+    }
+
+    // Divide a parte base em pedaços (por hífen ou sublinhado)
+    $parts = preg_split('/[-_]/', $base);
+
+    // Minifica cada parte mantendo os 3 primeiros caracteres
+    $minifiedParts = array_map(function($part) {
+      return substr($part, 0, 3);
+    }, $parts);
+
+    $minified = implode('_', $minifiedParts);
+
+    // Monta o nome final com o sufixo
+    $final = 'idx_' . $minified . $suffix;
+
+    // Garante o limite de 59 caracteres
+    if (strlen($final) > 59) {
+      // Corta apenas o prefixo minificado (mantém o sufixo completo)
+      $maxBaseLength = 59 - strlen($suffix) - strlen('idx_');
+      $minified = substr($minified, 0, $maxBaseLength);
+      $final = 'idx_' . $minified . $suffix;
+    }
+
+    return $final;
+  }
 
   private function constraintMinify($constraint)
   {
