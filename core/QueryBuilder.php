@@ -289,14 +289,16 @@ class QueryBuilder {
   public function groupStart()
   {
     $this->groupStart =  true;
+    return $this;
   }
 
   public function groupEnd()
   {
     $this->groupEnd =  true;
+    return $this;
   }
 
-  public function _groupStart()
+  private function _groupStart()
   {
     $gStart = '';
 
@@ -309,7 +311,7 @@ class QueryBuilder {
     return $gStart;
   }
 
-  public function _groupEnd()
+  private function _groupEnd()
   {
     $gEnd = '';
 
