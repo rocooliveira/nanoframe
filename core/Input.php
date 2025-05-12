@@ -6,10 +6,26 @@ namespace Nanoframe\Core;
 class Input
 {
 
+	private static $inputStreamMethods = null;
 
 	public function __construct()
 	{
-		// $this->processGlobalInput();
+		/** @todo Verificar necessidade de um pré-processamento global */
+	}
+
+
+	private function setInputStreamMethods(array $allowed)
+	{
+		self::$inputStreamMethods = $allowed;
+	}
+
+	private function getInputStreamMethods()
+	{
+		$ret = self::$inputStreamMethods;
+
+		self::$inputStreamMethods = null;
+
+		return $ret;
 	}
 
 	/**
@@ -19,7 +35,21 @@ class Input
 	 */
 	public function post($index = NULL, $clearData = TRUE)
 	{
-		return $this->getRequestData($_POST, $index, $clearData);
+
+    // Obtém o Content-Type da requisição
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    
+    $requestData = $_POST;
+
+    // Se for JSON, tenta decodificar o corpo
+    if (stripos($contentType, 'application/json') !== false) {
+
+    	$this->setInputStreamMethods(['POST']);
+
+      return $this->inputStream($index, $clearData);
+    }
+
+		return $this->getRequestData($requestData, $index, $clearData);
 	}
 
 	/**
@@ -45,6 +75,17 @@ class Input
 		return $this->getRequestData($requestData, $index, $clearData);
 	}
 
+	public function put($index = NULL, $clearData = TRUE)
+	{
+		$this->setInputStreamMethods(['PUT']);
+    return $this->inputStream($index, $clearData);
+	}
+
+	public function patch($index = NULL, $clearData = TRUE)
+	{
+		$this->setInputStreamMethods(['PATCH']);
+    return $this->inputStream($index, $clearData);
+	}
 
 	/**
 	 * @param  string|array|null  $index	indice a ser buscado (string)
@@ -53,11 +94,31 @@ class Input
 	 */
 	public function inputStream($index = NULL, $clearData = TRUE)
 	{
-		if ( ! in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'DELETE', 'PATCH']) ) {
+
+    // Obtém o Content-Type da requisição
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    $methods = $this->getInputStreamMethods() ?? ['PUT', 'DELETE', 'PATCH'];
+
+		if ( ! in_array($_SERVER['REQUEST_METHOD'], $methods  ) ) {
 			return [];
 		}
 
-		parse_str(file_get_contents('php://input'), $requestData);
+    $requestData = null;
+
+    // Se for JSON, tenta decodificar o corpo
+    if (stripos($contentType, 'application/json') !== false) {
+
+    	$rawInput = file_get_contents('php://input');
+
+      $data = json_decode($rawInput, true);
+
+      // Retorna array vazio se a decodificação falhar
+      $requestData = is_array($data) ? $data : [];
+
+    }else{
+
+    	parse_str(file_get_contents('php://input'), $requestData);
+    }
 
 		return $this->getRequestData($requestData, $index, $clearData);
 	}
