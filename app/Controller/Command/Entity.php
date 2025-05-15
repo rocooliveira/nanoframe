@@ -53,7 +53,7 @@ class Entity extends Prompt
 			}
 
 			$columns = $this->pdo->query("DESCRIBE $table")->fetchAll(\PDO::FETCH_ASSOC);
-			$className = ucfirst($table);
+			$className = $this->snakeToUpperCamelCase($table);
 
 			$filePath = APP_PATH . "/Entity/$className.php";
 
@@ -145,7 +145,18 @@ class Entity extends Prompt
 		}
 	}
 
-	public function determineDefaultValue($default, $extra)
+	private function snakeToUpperCamelCase(string $input): string {
+
+    $parts = explode('_', $input);
+
+    $result = array_map(function($part) {
+      return ucfirst(strtolower($part));
+    }, $parts);
+
+    return implode('', $result);
+	}
+
+	private function determineDefaultValue($default, $extra)
 	{
 
     if (is_null($default)) {
