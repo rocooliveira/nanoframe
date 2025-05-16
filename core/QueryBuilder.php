@@ -38,6 +38,8 @@ class QueryBuilder {
 
   private $lastQuery = '';
   private $affectedRows = 0;
+
+  private $error = ['code' => null, 'message' => null];
   
 
   public function __construct() {
@@ -399,32 +401,80 @@ class QueryBuilder {
 
 
   public function getArray() {
+
     $sql = $this->sqlSelectStringMount();
 
     $result = $this->_query($sql, $this->params);
 
-    return $result->fetchAll(PDO::FETCH_ASSOC);
+    if ($result instanceof \PDOStatement) {
+   
+      try{
+        return $result->fetchAll(PDO::FETCH_ASSOC);
+        
+      } catch (\PDOException $e){
+
+        $this->error['code'] = $e->getCode();
+        $this->error['message'] = $e->getMessage();
+
+        return null;
+      }
+
+    }else{
+      return null;
+    }
   }
 
   public function get() {
+
     $sql = $this->sqlSelectStringMount();
 
     $result = $this->_query($sql, $this->params);
 
-    return $result->fetchAll(PDO::FETCH_OBJ);
+    if ($result instanceof \PDOStatement) {
+   
+      try{
+        return $result->fetchAll(PDO::FETCH_OBJ);
+
+      } catch (\PDOException $e){
+
+        $this->error['code'] = $e->getCode();
+        $this->error['message'] = $e->getMessage();
+
+        return null;
+      }
+
+    }else{
+      return null;
+    }
   }
 
 
   public function getRow($field = '') {
+
     $this->limit(1);
 
     $sql = $this->sqlSelectStringMount();
 
     $result = $this->_query($sql, $this->params);
 
-    $data = $result->fetchAll(PDO::FETCH_OBJ)[0] ?? NULL;
+    if ($result instanceof \PDOStatement) {
+   
+      try{
+        $data = $result->fetchAll(PDO::FETCH_OBJ)[0] ?? NULL;
 
-    return $field ? ($data->$field ?? NULL) : $data;
+        return $field ? ($data->$field ?? NULL) : $data;
+      
+      } catch (\PDOException $e){
+
+        $this->error['code'] = $e->getCode();
+        $this->error['message'] = $e->getMessage();
+
+        return null;
+      }
+
+    }else{
+      return null;
+    }
   }
 
 
@@ -857,11 +907,32 @@ class QueryBuilder {
       return $statement;
 
     } catch (\PDOException $e) {
+      $this->setError(
+        $e->errorInfo[1] ?? 0, 
+        $e->errorInfo[2] ?? 'Informações de erro detalhadas do banco de dados não disponíveis'
+      );
 
-      die("Query failed: " . $e->getMessage());
+      return null;
     }
   }
 
+  private function setError($code, $message)
+  {
+    $this->error['code'] = $code;
+    $this->error['message'] = $message;
+  }
+
+
+  /**
+   * Retorna um objeto de erro com informaçõe do banco de dados
+   * @return object{code: int, message: string}
+   */
+  public function error()
+  {
+    $error = (object)$this->error;
+
+    return $error;
+  }
 
   public function resetWrite()
   {
@@ -874,6 +945,8 @@ class QueryBuilder {
     $this->orderBy = '';
     $this->limit = '';
     $this->params = [];
+
+    $this->error = ['code' => null, 'message' => null];
   }
 
   private function storeClausesAndParams(){
