@@ -28,7 +28,7 @@ if ($environment === 'development' || $environment === 'staging' || $environment
 } else {
   // Ambiente de produção
   ini_set('display_errors', '0');
-  error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED); // Suprimir alguns tipos de erros
+  error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED); // Suprimir alguns tipos de erros
 }
 // ------------------------------------------------------------------------
 
