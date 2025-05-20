@@ -8,7 +8,7 @@ NanoFrame é um pequeno framework extremamente simples para php. Para projetos p
 Clone o repositório ou faça download manual dos arquivos para seu diretório
 
 ```bash
-git clone https://github.com/your-username/nanoframe.git
+git clone https://github.com/rocooliveira/nanoframe.git
 ```
 #### Usando composer
 
