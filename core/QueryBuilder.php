@@ -3,6 +3,8 @@
 namespace Nanoframe\Core;
 
 use Exception;
+use Nanoframe\Core\Exceptions\ConnectionException;
+use Nanoframe\Core\Exceptions\QueryBuilderException;
 use \PDO;
 
 class QueryBuilder {
@@ -58,7 +60,11 @@ class QueryBuilder {
       $this->conn = new PDO($dsn, $this->username, $this->password);
       $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (\PDOException $e) {
-      die("Connection failed: " . $e->getMessage());
+      throw new ConnectionException(
+        'Falha ao conectar com o banco de dados' . ($e->errorInfo[2] ?? $e->getMessage()), 
+        $e->errorInfo[1] ?? 0, 
+        $e
+      );
     }
   }
 
@@ -71,11 +77,21 @@ class QueryBuilder {
 
   public function beginTransaction()
   {
-    if (!$this->conn) {
-      $this->connect();
+    try {
+      
+      if (!$this->conn) {
+        $this->connect();
+      }
+      
+      $this->conn->beginTransaction();
+
+    } catch (\PDOException $e) {
+      throw new QueryBuilderException(
+        "Falha na transaction: " . ($e->errorInfo[2] ?? $e->getMessage()), 
+        $e->errorInfo[1] ?? 0, 
+        $e
+      );
     }
-    
-    $this->conn->beginTransaction();
   }
 
   public function commit()
@@ -411,12 +427,9 @@ class QueryBuilder {
       try{
         return $result->fetchAll(PDO::FETCH_ASSOC);
         
-      } catch (\PDOException $e){
+      } catch (QueryBuilderException $e) {
 
-        $this->error['code'] = $e->getCode();
-        $this->error['message'] = $e->getMessage();
-
-        return null;
+        throw $e; 
       }
 
     }else{
@@ -435,12 +448,9 @@ class QueryBuilder {
       try{
         return $result->fetchAll(PDO::FETCH_OBJ);
 
-      } catch (\PDOException $e){
+      } catch (QueryBuilderException $e) {
 
-        $this->error['code'] = $e->getCode();
-        $this->error['message'] = $e->getMessage();
-
-        return null;
+        throw $e; 
       }
 
     }else{
@@ -464,12 +474,9 @@ class QueryBuilder {
 
         return $field ? ($data->$field ?? NULL) : $data;
       
-      } catch (\PDOException $e){
+      } catch (QueryBuilderException $e) {
 
-        $this->error['code'] = $e->getCode();
-        $this->error['message'] = $e->getMessage();
-
-        return null;
+        throw $e; 
       }
 
     }else{
@@ -692,7 +699,12 @@ class QueryBuilder {
    * @return int|array                   id(s) de registro(s) inserido(s)
    */
   public function insertIfNotExists($data, $uniqueFields, $batch = FALSE) {
-    
+
+    if (empty($uniqueFields)) {
+      $this->setError(0, "uniqueFields é obrigatório");
+      return false; 
+    }
+        
 
     if( $batch == FALSE ){
       $columns = implode(', ', array_keys($data));
@@ -806,11 +818,11 @@ class QueryBuilder {
 
   public function getNumRows($clearQueryString = FALSE)
   {
-    if (!$this->conn) {
-      $this->connect();
-    }
-
     try {
+
+      if (!$this->conn) {
+        $this->connect();
+      }
 
       $sql = $this->sqlSelectStringMount();
 
@@ -827,19 +839,20 @@ class QueryBuilder {
       return $statement->rowCount();
 
     } catch (\PDOException $e) {
-
-      die("Query failed: " . $e->getMessage());
+      $this->setError($e->errorInfo[1] ?? 0, ($e->errorInfo[2] ?? $e->getMessage()) );
+      return 0; 
     }
   }
 
 
   public function query($sql, $params = [], $returnObject = TRUE)
   {
-    if (!$this->conn) {
-      $this->connect();
-    }
-
     try {
+
+      if (!$this->conn) {
+        $this->connect();
+      }
+
 
       $statement = $this->conn->prepare($sql);
 
@@ -847,20 +860,18 @@ class QueryBuilder {
 
       $sqlNormalized = trim(preg_replace('/\s+/', ' ', $sql));
 
-
+      // Não retorna resultados para INSERT/UPDATE/DELETE
       if( ! preg_match('/^\s*(SELECT|WITH)/i', $sqlNormalized) ){
         return;
       }
 
-      if($returnObject == TRUE){
-        return $statement->fetchAll(PDO::FETCH_OBJ);
-      }else{
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
-      }
+      return $returnObject
+        ? $statement->fetchAll(PDO::FETCH_OBJ)
+        : $statement->fetchAll(PDO::FETCH_ASSOC);
 
     } catch (\PDOException $e) {
-
-      die("Query failed: " . $e->getMessage());
+      $this->setError($e->errorInfo[1] ?? 0, ($e->errorInfo[2] ?? $e->getMessage()) );
+      return null;
     }
   }
 
@@ -907,13 +918,58 @@ class QueryBuilder {
       return $statement;
 
     } catch (\PDOException $e) {
-      $this->setError(
-        $e->errorInfo[1] ?? 0, 
-        $e->errorInfo[2] ?? 'Informações de erro detalhadas do banco de dados não disponíveis'
-      );
+
+      $errorCode = $e->errorInfo[1] ?? 0; // Código numérico real
+      $errorMessage = $e->errorInfo[2] ?? $e->getMessage();
+
+      $this->setError( $errorCode, $errorMessage );
+
+      // Lança exceção apenas para erros graves de sintaxe/operação
+      if ($this->isCriticalError($errorCode)) {
+        
+        error_log(
+           sprintf(
+            "[%s] MySQL Error %d: %s | SQL: %s",
+            date('Y-m-d H:i:s'),
+            $errorCode,
+            $errorMessage,
+            $this->lastQuery
+          )
+        );
+
+        throw new QueryBuilderException(
+          "Ocorreu um erro de Banco de Dados: " . ($e->errorInfo[2] ?? $e->getMessage()), 
+          $errorCode, 
+          $e,
+          ['sql' => $sql, 'params' => $params] // Contexto adicional
+        );
+      }
 
       return null;
+
+    } catch (ConnectionException $e) {
+      throw $e; // Propaga exceção de conexão
     }
+  }
+
+  // Método auxiliar para classificar erros
+  private function isCriticalError(int $code): bool {
+
+    $criticalErrors = [
+      1030, // Erro genérico de leitura/escrita (ER_GET_ERRNO)
+      1016, // Arquivo da tabela não pôde ser aberto
+      1054, // Coluna não encontrada (ER_BAD_FIELD_ERROR)
+      1146, // Tabela não encontrada (ER_NO_SUCH_TABLE)
+      1216, // Foreign key sem linha referenciada
+      1217, // Restrição de chave estrangeira bloqueando DELETE
+      1451, // Linha referenciada (não pode deletar)
+      1194, // Tabela corrompida
+      144,  // Tabela MyISAM corrompida
+      1040, // Demasiadas conexões
+      2006, // MySQL server has gone away
+    ];
+
+    return in_array($code, $criticalErrors, true);
   }
 
   private function setError($code, $message)
@@ -927,7 +983,7 @@ class QueryBuilder {
    * Retorna um objeto de erro com informaçõe do banco de dados
    * @return object{code: int, message: string}
    */
-  public function error()
+  public function error(): \stdClass
   {
     $error = (object)$this->error;
 
