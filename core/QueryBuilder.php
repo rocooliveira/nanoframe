@@ -646,6 +646,10 @@ class QueryBuilder {
 
   public function replaceBatch($data)
   {
+    
+    if (empty($data)) {
+      throw new \InvalidArgumentException('Nenhum dado fornecido para updateBatch.');
+    }
 
     if(is_object($data[0])){
       foreach ($data as $key => $row) {
