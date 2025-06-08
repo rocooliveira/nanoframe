@@ -426,46 +426,69 @@ class DatabaseForge
     $onUpdate = 'NO ACTION',
     $onDelete = 'NO ACTION' 
   ){
-
-
+    // Normalizar parâmetros para arrays
+    $foreignKeys = is_array($foreign_key) ? $foreign_key : [$foreign_key];
+    $refFields = is_array($refField) ? $refField : [$refField];
+    
+    // Validar se os arrays têm o mesmo tamanho
+    if (count($foreignKeys) !== count($refFields)) {
+      throw new \InvalidArgumentException(
+        "O número de chaves estrangeiras deve ser igual ao número de campos referenciados"
+      );
+    }
+    
     // FOREIGN KEY
     // ------------------------------------------------------------------------
-      $constraint = "fk_{$table}-{$foreign_key}-{$references}";
-
-      if( strlen($constraint) > 59 ){
-        $constraint =  $this->constraintMinify($constraint);
-      }
-
-
-      if( ! $this->isForeignKeyExists( $table, $constraint ) ){
-        $this->executeQuery("
+    
+    // Criar nome da constraint
+    $foreignKeyStr = implode('-', $foreignKeys);
+    $constraint = "fk_{$table}-{$foreignKeyStr}-{$references}";
+    
+    if (strlen($constraint) > 59) {
+        $constraint = $this->constraintMinify($constraint);
+    }
+    
+    if (!$this->isForeignKeyExists($table, $constraint)) {
+        // Construir lista de campos para a chave estrangeira
+        $foreignKeyList = '`' . implode('`, `', $foreignKeys) . '`';
+        $refFieldList = '`' . implode('`, `', $refFields) . '`';
+        
+        $sql = "
           ALTER TABLE `{$table}` 
             ADD CONSTRAINT `{$constraint}` 
-            FOREIGN KEY (`{$foreign_key}`) REFERENCES `{$references}`(`{$refField}`) 
+            FOREIGN KEY ({$foreignKeyList}) REFERENCES `{$references}`({$refFieldList}) 
             ON DELETE {$onDelete} 
             ON UPDATE {$onUpdate}
-        ");
-      }
-
-      // INDEX
-      // ------------------------------------------------------------------------
-
-      if( ! $this->isIndexExists($table, $constraint) ){
-
-        $index =  "{$constraint}_idx";
-
-        $this->executeQuery("ALTER TABLE `{$table}` ADD INDEX `{$index}` (`{$foreign_key}` ASC)");
-      }
+        ";
+        
+        $this->executeQuery($sql);
+    }
+    
+    // INDEX
+    // ------------------------------------------------------------------------
+    if (!$this->isIndexExists($table, $constraint)) {
+        $index = "{$constraint}_idx";
+        $indexFields = '`' . implode('` ASC, `', $foreignKeys) . '` ASC';
+        
+        $sql = "ALTER TABLE `{$table}` ADD INDEX `{$index}` ({$indexFields})";
+        $this->executeQuery($sql);
+    }
   }
 
 
   public function dropForeignKey($table, $foreign_key, $references)
   {
 
+    if( is_array($foreign_key) ){
+      $foreignKeyStr = implode('-', $foreign_key);
+    }else{
+      $foreignKeyStr = $foreign_key;
+    }
+
     // FOREIGN KEY
     // ------------------------------------------------------------------------
 
-    $constraint = "fk_{$table}-{$foreign_key}-{$references}";
+    $constraint = "fk_{$table}-{$foreignKeyStr}-{$references}";
 
     if( strlen($constraint) > 59 ){
        $constraint = $this->constraintMinify($constraint);
