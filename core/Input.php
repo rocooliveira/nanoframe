@@ -162,9 +162,35 @@ class Input
 		
 		}else{
 
-			$indexArray = array_fill_keys($index, NULL) ;
+			$testKeys = array_keys($index);
 
-			$data = array_merge( $indexArray, $data );
+			$hasNonNumericKeys = (bool)array_filter($testKeys, fn($key) => !is_numeric($key));
+
+			if( $hasNonNumericKeys === false  ){
+
+				$indexArray = array_fill_keys($index, NULL) ;
+
+				$data = array_merge( $indexArray, $data );
+
+			}else{
+
+				$indexArray = [];
+				$tmpIndex = [];
+
+				foreach ($index as $key => $value) {
+					if( is_numeric($key) ){
+						$indexArray[$value] = NULL;
+						$tmpIndex[] = $value;
+					}else{
+						$indexArray[$key] = $value;						
+						$tmpIndex[] = $key;
+					}
+				}
+
+				$data = array_merge( $indexArray, $data );
+				$index = $tmpIndex;
+
+			}
 
 		}
 
@@ -212,5 +238,3 @@ class Input
 	}
 }
 
-
-// Agora, os dados de entrada foram pré-processados com medidas básicas de segurança.
