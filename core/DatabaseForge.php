@@ -151,7 +151,7 @@ class DatabaseForge
       // Se o campo for único, adiciona a criação do índice
       if (isset($attribute['unique']) && $attribute['unique']) {
         $sqlPart = str_replace('UNIQUE ', '', $sqlPart);
-        $sqlPart .= ', UNIQUE INDEX ' . $tableName . '-' . $columnName . '_UNIQUE (' . $columnName . ')';
+        $sqlPart .= ', UNIQUE INDEX `' . $tableName . '-' . $columnName . '_UNIQUE` (' . $columnName . ')';
       }
 
       $sql .= $sqlPart;
