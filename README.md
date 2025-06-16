@@ -376,6 +376,12 @@ class HomeController extends BaseController
 
         // obtem o name e email de $_GET
         $var4 = $this->input->get(['name', 'email']);
+
+        // obtem o name e user de $_GET e seta um valor default para user caso nada seja enviado
+        // os valores default dentro do array sao definidos usando chave e valor, onde o a chave
+        // é o parâmetro a ser recuperado e o valor é o valor setado como padrão, caso não seja
+        // setado chave e valor o valor padrão para o parâmetro recuperado será sempre null
+        $var5 = $this->input->get(['name', 'type' => 'user']);
         
     }
 }
