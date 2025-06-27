@@ -230,6 +230,8 @@ class OrderModel extends BaseModel
 
 -   **`query($sql, $params = [])`**: Permite a execução direta de consultas SQL personalizadas.
 -   **`resetWrite()`**: Reinicia todas as propriedades de escrita para o estado inicial.
+-   **`getNumRows($clearQueryString = FALSE)`**: Quantidade total de linhas retornadas em uma consulta. Por padrão a string da consulta não é limpa após chamar **getNumRows**, caso precise limpar imediatamente após obter o numerom de linhas deverá passar true como parâmetro
+-   **`error()`**: Retorna um objeto de erro com informações do banco de dados ```object{code: int, message: string}```
 
 #### Transações 
 Os métodos para gerenciar transações no banco de dados também estarão dispóniveis no seu model através do QueryBuilder.
