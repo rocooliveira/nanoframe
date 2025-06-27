@@ -837,13 +837,7 @@ class Migrate extends Migration
 
 		if (strpos($this->migrationFileName, 'modify') !== false)
 		{
-			$fileContent .= '		if (is_array($'.'this->fields()))'  .  PHP_EOL;
-			$fileContent .= '		{'  .  PHP_EOL;
-			$fileContent .= '			foreach($this->fields() as $key => $val)'  .  PHP_EOL;
-			$fileContent .= '			{'  .  PHP_EOL;
-			$fileContent .= '				$this->dropColumn($'.'this->tableName,$'.'key);'  .  PHP_EOL;
-			$fileContent .= '			}'  .  PHP_EOL;
-			$fileContent .= '		}'  .  PHP_EOL;
+			$fileContent .= '		$this->dropColumn($'.'this->tableName, $'.'this->fields());'  .  PHP_EOL;
 		}
 		else
 		{
