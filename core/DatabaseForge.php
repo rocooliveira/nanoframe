@@ -225,6 +225,9 @@ class DatabaseForge
   }
 
   public function addColumn($tableName, $columnAttributes) {
+
+    $columnAttributes = (array)$columnAttributes;
+
     foreach ($columnAttributes as $columnName => $attribute) {
       if (!$this->isColumnExists($tableName, $columnName)) {
 
@@ -240,14 +243,21 @@ class DatabaseForge
     }
   }
 
-  public function dropColumn($tableName, $columnName) {
-    if ($this->isColumnExists($tableName, $columnName)) {
-      $sql = "ALTER TABLE $tableName
-              DROP COLUMN $columnName;";
+  public function dropColumn($tableName, $columnAttributes) {
 
-      $this->executeQuery($sql);
-    } else {
-      throw new \Exception("O campo '$columnName' não existe na tabela '$tableName'.");
+    $columnAttributes = (array)$columnAttributes;
+
+    foreach ($columnAttributes as $key => $attribute) {
+
+      $columnName = is_numeric($key) ? $attribute : $key;
+
+      if ($this->isColumnExists($tableName, $columnName)) {
+        $sql = "ALTER TABLE $tableName DROP COLUMN $columnName;";
+
+        $this->executeQuery($sql);
+      } else {
+        throw new \Exception("O campo '$columnName' não existe na tabela '$tableName'.");
+      }
     }
   }
 
