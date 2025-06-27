@@ -984,7 +984,7 @@ class QueryBuilder {
 
 
   /**
-   * Retorna um objeto de erro com informaçõe do banco de dados
+   * Retorna um objeto de erro com informações do banco de dados
    * @return object{code: int, message: string}
    */
   public function error(): \stdClass
