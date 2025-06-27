@@ -50,22 +50,22 @@ class Router
 
   public static function cliDispatch()
   {
-      global $argv;
+    global $argv;
 
-      // Se não houver argumentos, exiba uma mensagem de erro
-      if (empty($argv)) {
-          echo "Erro: Nenhum argumento fornecido para a linha de comando.\n";
-          exit;
-      }
+    // Se não houver argumentos, exiba uma mensagem de erro
+    if (empty($argv)) {
+      echo "Erro: Nenhum argumento fornecido para a linha de comando.\n";
+      exit;
+    }
 
-      // O primeiro argumento é a rota, os próximos são os parâmetros
-      $pathInfo = explode( '/',  array_shift($argv) );
+    // O primeiro argumento é a rota, os próximos são os parâmetros
+    $pathInfo = explode( '/',  array_shift($argv) );
 
-      $controllerMethod = array_shift($argv);
+    $controllerMethod = array_shift($argv);
 
-      $params = $argv;
+    $params = $argv;
 
-      self::callControllerMethod($pathInfo, $controllerMethod, $params, TRUE);
+    self::callControllerMethod($pathInfo, $controllerMethod, $params, TRUE);
       
   }
 
@@ -115,25 +115,15 @@ class Router
       $filePath = APP_PATH . "/Controller/{$pathUtil}/{$className}.php";
 
     } else {
-        $filePath = APP_PATH . "/Controller/{$path}.php";
-        $className = array_pop($handlerParts);
-
-
+      $filePath = APP_PATH . "/Controller/{$path}.php";
+      $className = array_pop($handlerParts);
     }
-
     
     $classWithNamespace = !$isCli 
     ? "App\\Controller{$namespace}\\{$className}"
     : "App\\Controller\\Command{$namespace}\\{$className}";
 
-
-    if (file_exists($filePath)) {
-      include_once $filePath;
-
-    }
-
     if (class_exists($classWithNamespace)) {
-
 
       $instance = new $classWithNamespace();
     } else {
@@ -186,18 +176,18 @@ class Router
 
   protected static function parseRoute($routePattern)
   {
-      // Verifica se há métodos HTTP definidos na rota
-      preg_match('/(.+)\[(.+)\]/', $routePattern, $matches);
+    // Verifica se há métodos HTTP definidos na rota
+    preg_match('/(.+)\[(.+)\]/', $routePattern, $matches);
 
-      if (count($matches) === 3) {
-          $route = trim($matches[1]);
-          $allowedMethods = explode(',', strtoupper($matches[2]));
-      } else {
-          $route = trim($routePattern);
-          $allowedMethods = ['GET']; // método padrão
-      }
+    if (count($matches) === 3) {
+        $route = trim($matches[1]);
+        $allowedMethods = explode(',', strtoupper($matches[2]));
+    } else {
+        $route = trim($routePattern);
+        $allowedMethods = ['GET']; // método padrão
+    }
 
-      return [$route, $allowedMethods];
+    return [$route, $allowedMethods];
   }
   
 }
