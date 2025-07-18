@@ -43,6 +43,6 @@ class Prompt
 		}
 		
 
-		return strtolower(trim(fgets(STDIN)));
+		return mb_strtolower(trim(fgets(STDIN)));
 	}
 }
