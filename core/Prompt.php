@@ -21,7 +21,7 @@ class Prompt
 	}
 
 
-	public function readLine($str, $outputType = 'default')
+	public function readLine($str, $getInLowerCase = true, $outputType = 'default')
 	{
 
 		switch ($outputType) {
@@ -43,6 +43,6 @@ class Prompt
 		}
 		
 
-		return mb_strtolower(trim(fgets(STDIN)));
+		return $getInLowerCase ?  mb_strtolower(trim(fgets(STDIN))) : trim(fgets(STDIN));
 	}
 }
