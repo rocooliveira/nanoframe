@@ -74,7 +74,7 @@ class Router
   {
     // Processa grupos opcionais primeiro
     $regex = preg_replace_callback(
-      '/\((.*?)\)\?/', 
+      '/\(([^)]*)\)\?/', 
       function ($matches) {
         // Substitui placeholders DENTRO do grupo opcional
         $inner = preg_replace('/:num/', '(\d+)', $matches[1]);
