@@ -865,7 +865,7 @@ class QueryBuilder {
       $sqlNormalized = trim(preg_replace('/\s+/', ' ', $sql));
 
       // Não retorna resultados para INSERT/UPDATE/DELETE
-      if( ! preg_match('/^\s*(SELECT|WITH)/i', $sqlNormalized) ){
+      if( preg_match('/^(INSERT|UPDATE|DELETE)/i', $sqlNormalized) ){
         return;
       }
 
